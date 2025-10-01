@@ -3,15 +3,16 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Three.js CSV Scatterplot with Camera Controls</title>
+    <title>Three.js CSV Scatterplot 3D + MIDI</title>
     <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm"
-        }
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm",
+        "controls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
       }
-    </script>
+    }
+  </script>
     <style>
         body {
             margin: 0;
@@ -28,18 +29,32 @@
     <script type="module">
         import * as THREE from "three";
         import { csvParse } from "d3-dsv";
-        import * as midi from "./midi.js"
+        import { OrbitControls } from "controls";
+        import * as midi from "./midi.js";
 
-        midi.getPermission()
+        midi.getPermission();
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
 
-        let camera, points, material;
-        let xmin, xmax, ymin, ymax;
+        let camera, points, material, controls;
+
+        // Perspective camera for 3D
+        camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            5000
+        );
+        camera.position.set(0, 0, 200);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
 
         // Load CSV
         fetch("data.csv")
@@ -50,14 +65,14 @@
                 const numPoints = data.length;
                 const positions = new Float32Array(numPoints * 3);
 
-                // compute bounds
                 let minX = Infinity, maxX = -Infinity;
                 let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
 
                 data.forEach((row, i) => {
                     const x = parseFloat(row.x);
                     const y = parseFloat(row.y);
-                    const z = 0;
+                    const z = parseFloat(row.z);
 
                     positions.set([x, y, z], i * 3);
 
@@ -65,18 +80,10 @@
                     maxX = Math.max(maxX, x);
                     minY = Math.min(minY, y);
                     maxY = Math.max(maxY, y);
+                    minZ = Math.min(minZ, z);
+                    maxZ = Math.max(maxZ, z);
                 });
 
-                // set camera bounds with padding
-                xmin = minX - 10;
-                xmax = maxX + 10;
-                ymin = minY - 10;
-                ymax = maxY + 10;
-
-                camera = new THREE.OrthographicCamera(
-                    xmin, xmax, ymax, ymin, 0.1, 2000
-                );
-                camera.position.z = 10;
 
                 const geometry = new THREE.BufferGeometry();
                 geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -89,103 +96,42 @@
                 points = new THREE.Points(geometry, material);
                 scene.add(points);
 
+                // Center camera on dataset
+                const midX = (minX + maxX) / 2;
+                const midY = (minY + maxY) / 2;
+                const midZ = (minZ + maxZ) / 2;
+                controls.target.set(midX, midY, midZ);
+                controls.update();
+
                 animate();
             });
 
+        // Hook up MIDI to change material size (as an example)
         navigator.requestMIDIAccess().then((midiAccess) => {
-            console.log(midiAccess)
             midi.listInputsAndOutputs(midiAccess);
-            let delta = 1;
+            let sizeStep = 0.5;
+
             midi.startLoggingMIDIInput(midiAccess, (event) => {
-                if (!camera) return; // wait until data loads
-
-                const step = 5;       // how much to move edges
-                const sizeStep = 0.5; // how much to change point size
-
-
-
-                console.log(event.data)
-                // TODO: Use Hashmap for all control bindings.
-                if (event.data[0] === 0xb0) {
-                    //turn knobs
-
-                    if (event.data[1] == 0x10) {
-                        //x-min
-                        if (event.data[2] === 0x41) {
-                            //scrolling counter-clockwise
-                            xmin -= step;
-                        } else if (event.data[2] === 0x1) {
-                            //scrolling clockwise
-                            xmin += step;
-                        }
-
-                    }
-                    else if (event.data[1] == 0x11) {
-                        //x-max
-                        if (event.data[2] === 0x41) {
-                            //scrolling counter-clockwise
-                            xmax -= step;
-                        } else if (event.data[2] === 0x1) {
-                            //scrolling clockwise
-                            xmax += step;
-                        }
-                    }
-
-                    else if (event.data[1] == 0x12) {
-                        //y-min
-                        if (event.data[2] === 0x41) {
-                            //scrolling counter-clockwise
-                            ymin -= step;
-                        } else if (event.data[2] === 0x1) {
-                            //scrolling clockwise
-                            ymin += step;
-                        }
-                    }
-                    else if (event.data[1] == 0x13) {
-                        //y-max
-                        if (event.data[2] === 0x41) {
-                            //scrolling counter-clockwise
-                            ymax -= step;
-                        } else if (event.data[2] === 0x1) {
-                            //scrolling clockwise
-                            ymax += step;
-                        }
-                    }
-                    else if (event.data[1] == 0x14) {
-                        //size of dots
-                        if (event.data[2] === 0x41) {
-                            //scrolling counter-clockwise
-                            material.size += sizeStep;
-                        } else if (event.data[2] === 0x1) {
-                            //scrolling clockwise
-                            material.size = Math.max(0.1, material.size - sizeStep);
-                        }
+                if (!material) return;
+                if (event.data[0] === 0xb0 && event.data[1] == 0x14) {
+                    if (event.data[2] === 0x41) {
+                        material.size += sizeStep;
+                    } else if (event.data[2] === 0x1) {
+                        material.size = Math.max(0.1, material.size - sizeStep);
                     }
                 }
-                // else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
-                //     delta = event.data[2];
-                // }
-                // else if (event.data[0] === 0xe0 && event.data[1] === 0x0) {
-                //     k = Math.floor(event.data[2] / 40);
-                // }
+            });
+        });
 
-                camera.left = xmin;
-                camera.right = xmax;
-                camera.top = ymax;
-                camera.bottom = ymin;
-                camera.updateProjectionMatrix();
-            })
-        })
-
-        // Animate
         function animate() {
             requestAnimationFrame(animate);
+            controls.update();
             renderer.render(scene, camera);
         }
 
         window.addEventListener("resize", () => {
-            if (!camera) return;
             renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
     </script>
