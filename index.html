@@ -3,11 +3,13 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Three.js Scatterplot</title>
+    <title>Three.js CSV Scatterplot</title>
     <script type="importmap">
       {
         "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm",
+          "controls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
         }
       }
     </script>
@@ -26,6 +28,8 @@
 <body>
     <script type="module">
         import * as THREE from "three";
+        import { csvParse } from "d3-dsv";
+        import { OrbitControls } from "controls";
 
         // Scene & Camera
         const scene = new THREE.Scene();
@@ -33,39 +37,82 @@
             75,
             window.innerWidth / window.innerHeight,
             0.1,
-            1000
+            2000
         );
-        camera.position.z = 30;
+        camera.position.set(0, 0, 100);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Generate random points
-        const numPoints = 1000;
-        const positions = new Float32Array(numPoints * 3);
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // smooth movement
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = true;
 
-        for (let i = 0; i < numPoints; i++) {
-            const x = (Math.random() - 0.5) * 50;
-            const y = (Math.random() - 0.5) * 50;
-            const z = 0; // keep flat
-            positions.set([x, y, z], i * 3);
+        // Load CSV
+        fetch("data.csv")
+            .then((res) => res.text())
+            .then((text) => {
+                const data = csvParse(text);
+
+                const numPoints = data.length;
+                const positions = new Float32Array(numPoints * 3);
+
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+
+                data.forEach((row, i) => {
+                    const x = parseFloat(row.x);
+                    const y = parseFloat(row.y);
+                    const z = 0;
+
+                    positions.set([x, y, z], i * 3);
+
+                    // Track bounds
+                    minX = Math.min(minX, x);
+                    maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y);
+                    maxY = Math.max(maxY, y);
+                });
+
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 1,
+                    color: 0xff5533,
+                });
+
+                const points = new THREE.Points(geometry, material);
+                scene.add(points);
+
+                // Fit camera to data
+                fitCameraToData(minX, maxX, minY, maxY);
+            });
+
+        function fitCameraToData(minX, maxX, minY, maxY) {
+            const midX = (minX + maxX) / 2;
+            const midY = (minY + maxY) / 2;
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            const maxDim = Math.max(width, height);
+            const fov = camera.fov * (Math.PI / 180);
+            let distance = maxDim / (2 * Math.tan(fov / 2));
+
+            distance *= 1.2; // add some padding
+            camera.position.set(midX, midY, distance);
+            camera.lookAt(midX, midY, 0);
+            controls.target.set(midX, midY, 0);
+            controls.update();
         }
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-        const material = new THREE.PointsMaterial({
-            size: 0.5,
-            color: 0x0077ff
-        });
-
-        const points = new THREE.Points(geometry, material);
-        scene.add(points);
 
         // Animate
         function animate() {
             requestAnimationFrame(animate);
+            controls.update();
             renderer.render(scene, camera);
         }
         animate();
