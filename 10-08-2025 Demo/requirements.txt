@@ -1,0 +1,21 @@
+Instructions from Prof. Purvis:
+
+-Assign a tuner that can scan through the various Z columns
+and color the X, Y plot according to the values in a particular X column. The function 
+will be something like: plot( x, y, c) where c is z1, z2, ... etc. The function should
+automatically know to normalize the z values so that they look nice on the color scale.
+-Add to/Clean up the documentation
+-Work on a parameter mapping interface that allows the user to know which tuner 
+controls which parameter/property.
+
+In this Demo, Complete the following:
+
+- Allow user to pick a data set that is a .csv file with x and y columns, and a bunch of z columns.
+-Allow a tuner to change the column index for the z (c) value. This will update the colors
+of all the points in the graph. The points should all be normalized first, so the program
+will have to scan and process the csv file first before continuing. Only one z column change
+be rendered at once. All the values in a column will be normalized for that column, and this 
+normalize value will be used to color the points using a color scale that you will be hard-coding
+(or maybe requesting from the user in the future).
+- Plot values 
+- Allow the user to navigate to a settings menu so they can enter in their User Mappings.
