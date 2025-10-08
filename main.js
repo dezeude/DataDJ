@@ -12,57 +12,111 @@ const scene = new THREE.Scene();
 
 let camera, points, material;
 let xmin, xmax, ymin, ymax;
+let columns, curZColumn = "5";
 
 // Load CSV
-fetch("data.csv")
-    .then((res) => res.text())
-    .then((text) => {
+document.getElementById("fileInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const text = event.target.result;
         const data = csvParse(text);
+        renderData(data);
+    };
+    reader.readAsText(file);
+});
 
-        const numPoints = data.length;
-        const positions = new Float32Array(numPoints * 3);
+let zDataMap = {}; // stores normalized z arrays for each column
+let geometry, colors;
+let dataGlobal = [];
 
-        // compute bounds
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
+// Called once when CSV loads
+function renderData(data) {
+    dataGlobal = data;
+    columns = Object.keys(data[0]);
+    const zColumns = columns.filter((c) => c.startsWith("z"));
+    console.log("zColumns:", zColumns);
 
-        data.forEach((row, i) => {
-            const x = parseFloat(row.x);
-            const y = parseFloat(row.y);
-            const z = 0;
+    const numPoints = data.length;
+    const positions = new Float32Array(numPoints * 3);
+    colors = new Float32Array(numPoints * 3);
 
-            positions.set([x, y, z], i * 3);
+    // --- Compute XY bounds
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
 
-            minX = Math.min(minX, x);
-            maxX = Math.max(maxX, x);
-            minY = Math.min(minY, y);
-            maxY = Math.max(maxY, y);
-        });
-
-        // set camera bounds with padding
-        xmin = minX - 10;
-        xmax = maxX + 10;
-        ymin = minY - 10;
-        ymax = maxY + 10;
-
-        camera = new THREE.OrthographicCamera(
-            xmin, xmax, ymax, ymin, 0.1, 2000
-        );
-        camera.position.z = 10;
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-        material = new THREE.PointsMaterial({
-            size: 2,
-            color: 0xff5533
-        });
-
-        points = new THREE.Points(geometry, material);
-        scene.add(points);
-
-        animate();
+    data.forEach((row, i) => {
+        const x = parseFloat(row.x);
+        const y = parseFloat(row.y);
+        positions.set([x, y, 0], i * 3);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
     });
+
+    // --- Preprocess and normalize all z columns
+    zColumns.forEach((zCol) => {
+        const zVals = data.map(r => parseFloat(r[zCol]));
+        const minZ = Math.min(...zVals);
+        const maxZ = Math.max(...zVals);
+        const rangeZ = maxZ - minZ || 1;
+
+        const normed = new Float32Array(zVals.length);
+        for (let i = 0; i < zVals.length; i++) {
+            normed[i] = (zVals[i] - minZ) / rangeZ;
+        }
+        zDataMap[zCol] = normed;
+    });
+
+    // --- Build geometry
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    // Initial color mapping
+    updatePointColors(`z${curZColumn}`);
+
+    material = new THREE.PointsMaterial({
+        size: 2,
+        vertexColors: true,
+    });
+
+    if (points) scene.remove(points);
+    points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    // Set up camera bounds
+    xmin = minX - 10;
+    xmax = maxX + 10;
+    ymin = minY - 10;
+    ymax = maxY + 10;
+    camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
+    camera.position.z = 10;
+
+    animate();
+}
+
+function updatePointColors(zColName) {
+    if (!geometry || !zDataMap[zColName]) return;
+
+    const zNorms = zDataMap[zColName];
+    const color = new THREE.Color();
+
+    for (let i = 0; i < zNorms.length; i++) {
+        const zNorm = zNorms[i];
+        color.setHSL(0.7 - 0.7 * zNorm, 1.0, 0.5); // blue→red
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+    }
+
+    geometry.attributes.color.needsUpdate = true; // 🚀
+}
+
+
 
 navigator.requestMIDIAccess().then((midiAccess) => {
     console.log(midiAccess)
@@ -75,8 +129,6 @@ navigator.requestMIDIAccess().then((midiAccess) => {
         const sizeStep = 0.5; // how much to change point size
 
 
-
-        console.log(event.data)
         // TODO: Use Hashmap for all control bindings.
         if (event.data[0] === 0xb0) {
             //turn knobs
@@ -134,9 +186,11 @@ navigator.requestMIDIAccess().then((midiAccess) => {
                 }
             }
         }
-        // else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
-        //     delta = event.data[2];
-        // }
+        else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
+            curZColumn = event.data[2];
+            console.log(`Cur Z Column: ${curZColumn}`);
+            updatePointColors(`z${curZColumn}`);
+        }
         // else if (event.data[0] === 0xe0 && event.data[1] === 0x0) {
         //     k = Math.floor(event.data[2] / 40);
         // }

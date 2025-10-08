@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Three.js CSV Scatterplot with Camera Controls</title>
-    <script type="importmap">
+  <meta charset="UTF-8" />
+  <title>Three.js CSV Scatterplot with Camera Controls</title>
+  <script type="importmap">
       {
         "imports": {
           "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -12,20 +12,16 @@
         }
       }
     </script>
-    <script src="./main.js"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
 
-        canvas {
-            display: block;
-        }
-    </style>
+  <script type="module" src="./main.js"></script>
+  <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
+  <div id="fileInputContainer">
+    <label>Select CSV File:</label>
+    <input type="file" id="fileInput" accept=".csv" />
+  </div>
 </body>
 
 </html>
