@@ -23,12 +23,28 @@
     <h1>🎛️ Data DJ</h1>
     <div class="toolbar-right">
       <div class="file-upload">
-        <button title="Load CSV File">
+        <button title="Load CSV">
           📁 Load CSV
           <input type="file" id="fileInput" accept=".csv" />
         </button>
       </div>
+      <button id="settingsBtn" title="Open Settings">⚙️ Settings</button>
     </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settingsPanel">
+    <strong>Map MIDI Controls</strong>
+    <button data-func="xmin-inc">X-Min ➕</button>
+    <button data-func="xmin-dec">X-Min ➖</button>
+    <button data-func="xmax-inc">X-Max ➕</button>
+    <button data-func="xmax-dec">X-Max ➖</button>
+    <button data-func="ymin-inc">Y-Min ➕</button>
+    <button data-func="ymin-dec">Y-Min ➖</button>
+    <button data-func="ymax-inc">Y-Max ➕</button>
+    <button data-func="ymax-dec">Y-Max ➖</button>
+    <button data-func="size-inc">Size ➕</button>
+    <button data-func="size-dec">Size ➖</button>
   </div>
 
 </body>

@@ -5,20 +5,41 @@ import * as midi from "./midi.js";
 midi.getPermission();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight - 50); // adjust for toolbar
+renderer.setSize(window.innerWidth, window.innerHeight - 50);
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-
 let camera, points, material;
 let xmin, xmax, ymin, ymax;
 let columns, curZColumn = "5";
 
-// Handle CSV Upload
+let zDataMap = {};
+let geometry, colors;
+let dataGlobal = [];
+
+// --- MIDI Mapping Logic ---
+const midiBindings = {}; // { "status-data1-data2": "functionName" }
+let waitingForMapping = null; // the function we're currently mapping
+
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+
+settingsBtn.addEventListener("click", () => {
+    const isVisible = settingsPanel.style.display === "flex";
+    settingsPanel.style.display = isVisible ? "none" : "flex";
+});
+
+settingsPanel.querySelectorAll("button[data-func]").forEach((btn) => {
+    btn.onclick = () => {
+        waitingForMapping = btn.dataset.func;
+        btn.textContent = `Waiting for MIDI... 🎚️`;
+    };
+});
+
+// --- CSV Loading ---
 document.getElementById("fileInput").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
         const text = event.target.result;
@@ -28,25 +49,16 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
     reader.readAsText(file);
 });
 
-let zDataMap = {};
-let geometry, colors;
-let dataGlobal = [];
-
-// --- Render CSV data ---
+// --- Render Data ---
 function renderData(data) {
     dataGlobal = data;
     columns = Object.keys(data[0]);
     const zColumns = columns.filter((c) => c.startsWith("z"));
-    console.log("zColumns:", zColumns);
-
     const numPoints = data.length;
     const positions = new Float32Array(numPoints * 3);
     colors = new Float32Array(numPoints * 3);
 
-    let minX = Infinity,
-        maxX = -Infinity,
-        minY = Infinity,
-        maxY = -Infinity;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
     data.forEach((row, i) => {
         const x = parseFloat(row.x);
@@ -58,7 +70,7 @@ function renderData(data) {
         maxY = Math.max(maxY, y);
     });
 
-    // Normalize all z columns
+    // Normalize z columns
     zColumns.forEach((zCol) => {
         const zVals = data.map((r) => parseFloat(r[zCol]));
         const minZ = Math.min(...zVals);
@@ -93,28 +105,24 @@ function renderData(data) {
 
     camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
     camera.position.z = 10;
-
     animate();
 }
 
 function updatePointColors(zColName) {
     if (!geometry || !zDataMap[zColName]) return;
-
     const zNorms = zDataMap[zColName];
     const color = new THREE.Color();
-
     for (let i = 0; i < zNorms.length; i++) {
         const zNorm = zNorms[i];
-        color.setHSL(0.7 - 0.7 * zNorm, 1.0, 0.5); // blue→red
+        color.setHSL(0.7 - 0.7 * zNorm, 1.0, 0.5);
         colors[i * 3] = color.r;
         colors[i * 3 + 1] = color.g;
         colors[i * 3 + 2] = color.b;
     }
-
     geometry.attributes.color.needsUpdate = true;
 }
 
-// --- MIDI controls ---
+// --- MIDI Handling ---
 navigator.requestMIDIAccess().then((midiAccess) => {
     midi.listInputsAndOutputs(midiAccess);
     const step = 5;
@@ -122,25 +130,40 @@ navigator.requestMIDIAccess().then((midiAccess) => {
 
     midi.startLoggingMIDIInput(midiAccess, (event) => {
         if (!camera) return;
+        const id = `${event.data[0]}-${event.data[1]}-${event.data[2]}`;
 
-        if (event.data[0] === 0xb0) {
-            if (event.data[1] == 0x10) xmin += event.data[2] === 0x41 ? -step : step;
-            else if (event.data[1] == 0x11) xmax += event.data[2] === 0x41 ? -step : step;
-            else if (event.data[1] == 0x12) ymin += event.data[2] === 0x41 ? -step : step;
-            else if (event.data[1] == 0x13) ymax += event.data[2] === 0x41 ? -step : step;
-            else if (event.data[1] == 0x14)
-                material.size += event.data[2] === 0x41 ? sizeStep : -sizeStep;
-        } else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
-            curZColumn = event.data[2];
-            console.log(`Cur Z Column: ${curZColumn}`);
-            updatePointColors(`z${curZColumn}`);
+        // Mapping mode
+        if (waitingForMapping) {
+            midiBindings[id] = waitingForMapping;
+            console.log(`Mapped ${id} → ${waitingForMapping}`);
+            const btn = settingsPanel.querySelector(`button[data-func='${waitingForMapping}']`);
+            if (btn) btn.textContent = `${waitingForMapping} ✅`;
+            waitingForMapping = null;
+            return;
         }
 
-        camera.left = xmin;
-        camera.right = xmax;
-        camera.top = ymax;
-        camera.bottom = ymin;
-        camera.updateProjectionMatrix();
+        // Execute mapped function
+        const func = midiBindings[id];
+        if (func) {
+            switch (func) {
+                case "xmin-inc": xmin += step; break;
+                case "xmin-dec": xmin -= step; break;
+                case "xmax-inc": xmax += step; break;
+                case "xmax-dec": xmax -= step; break;
+                case "ymin-inc": ymin += step; break;
+                case "ymin-dec": ymin -= step; break;
+                case "ymax-inc": ymax += step; break;
+                case "ymax-dec": ymax -= step; break;
+                case "size-inc": material.size += sizeStep; break;
+                case "size-dec": material.size = Math.max(0.1, material.size - sizeStep); break;
+            }
+
+            camera.left = xmin;
+            camera.right = xmax;
+            camera.top = ymax;
+            camera.bottom = ymin;
+            camera.updateProjectionMatrix();
+        }
     });
 });
 
