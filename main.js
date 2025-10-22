@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { csvParse } from "d3-dsv";
-import * as midi from "./midi.js"
+import * as midi from "./midi.js";
 
-midi.getPermission()
+midi.getPermission();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight - 50); // adjust for toolbar
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -14,7 +14,7 @@ let camera, points, material;
 let xmin, xmax, ymin, ymax;
 let columns, curZColumn = "5";
 
-// Load CSV
+// Handle CSV Upload
 document.getElementById("fileInput").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -28,11 +28,11 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
     reader.readAsText(file);
 });
 
-let zDataMap = {}; // stores normalized z arrays for each column
+let zDataMap = {};
 let geometry, colors;
 let dataGlobal = [];
 
-// Called once when CSV loads
+// --- Render CSV data ---
 function renderData(data) {
     dataGlobal = data;
     columns = Object.keys(data[0]);
@@ -43,9 +43,10 @@ function renderData(data) {
     const positions = new Float32Array(numPoints * 3);
     colors = new Float32Array(numPoints * 3);
 
-    // --- Compute XY bounds
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
 
     data.forEach((row, i) => {
         const x = parseFloat(row.x);
@@ -57,13 +58,12 @@ function renderData(data) {
         maxY = Math.max(maxY, y);
     });
 
-    // --- Preprocess and normalize all z columns
+    // Normalize all z columns
     zColumns.forEach((zCol) => {
-        const zVals = data.map(r => parseFloat(r[zCol]));
+        const zVals = data.map((r) => parseFloat(r[zCol]));
         const minZ = Math.min(...zVals);
         const maxZ = Math.max(...zVals);
         const rangeZ = maxZ - minZ || 1;
-
         const normed = new Float32Array(zVals.length);
         for (let i = 0; i < zVals.length; i++) {
             normed[i] = (zVals[i] - minZ) / rangeZ;
@@ -71,12 +71,10 @@ function renderData(data) {
         zDataMap[zCol] = normed;
     });
 
-    // --- Build geometry
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // Initial color mapping
     updatePointColors(`z${curZColumn}`);
 
     material = new THREE.PointsMaterial({
@@ -88,11 +86,11 @@ function renderData(data) {
     points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // Set up camera bounds
     xmin = minX - 10;
     xmax = maxX + 10;
     ymin = minY - 10;
     ymax = maxY + 10;
+
     camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
     camera.position.z = 10;
 
@@ -113,97 +111,39 @@ function updatePointColors(zColName) {
         colors[i * 3 + 2] = color.b;
     }
 
-    geometry.attributes.color.needsUpdate = true; // 🚀
+    geometry.attributes.color.needsUpdate = true;
 }
 
-
-
+// --- MIDI controls ---
 navigator.requestMIDIAccess().then((midiAccess) => {
-    console.log(midiAccess)
     midi.listInputsAndOutputs(midiAccess);
-    let delta = 1;
+    const step = 5;
+    const sizeStep = 0.5;
+
     midi.startLoggingMIDIInput(midiAccess, (event) => {
-        if (!camera) return; // wait until data loads
+        if (!camera) return;
 
-        const step = 5;       // how much to move edges
-        const sizeStep = 0.5; // how much to change point size
-
-
-        // TODO: Use Hashmap for all control bindings.
         if (event.data[0] === 0xb0) {
-            //turn knobs
-
-            if (event.data[1] == 0x10) {
-                //x-min
-                if (event.data[2] === 0x41) {
-                    //scrolling counter-clockwise
-                    xmin -= step;
-                } else if (event.data[2] === 0x1) {
-                    //scrolling clockwise
-                    xmin += step;
-                }
-
-            }
-            else if (event.data[1] == 0x11) {
-                //x-max
-                if (event.data[2] === 0x41) {
-                    //scrolling counter-clockwise
-                    xmax -= step;
-                } else if (event.data[2] === 0x1) {
-                    //scrolling clockwise
-                    xmax += step;
-                }
-            }
-
-            else if (event.data[1] == 0x12) {
-                //y-min
-                if (event.data[2] === 0x41) {
-                    //scrolling counter-clockwise
-                    ymin -= step;
-                } else if (event.data[2] === 0x1) {
-                    //scrolling clockwise
-                    ymin += step;
-                }
-            }
-            else if (event.data[1] == 0x13) {
-                //y-max
-                if (event.data[2] === 0x41) {
-                    //scrolling counter-clockwise
-                    ymax -= step;
-                } else if (event.data[2] === 0x1) {
-                    //scrolling clockwise
-                    ymax += step;
-                }
-            }
-            else if (event.data[1] == 0x14) {
-                //size of dots
-                if (event.data[2] === 0x41) {
-                    //scrolling counter-clockwise
-                    material.size += sizeStep;
-                } else if (event.data[2] === 0x1) {
-                    //scrolling clockwise
-                    material.size = Math.max(0.1, material.size - sizeStep);
-                }
-            }
-        }
-        else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
+            if (event.data[1] == 0x10) xmin += event.data[2] === 0x41 ? -step : step;
+            else if (event.data[1] == 0x11) xmax += event.data[2] === 0x41 ? -step : step;
+            else if (event.data[1] == 0x12) ymin += event.data[2] === 0x41 ? -step : step;
+            else if (event.data[1] == 0x13) ymax += event.data[2] === 0x41 ? -step : step;
+            else if (event.data[1] == 0x14)
+                material.size += event.data[2] === 0x41 ? sizeStep : -sizeStep;
+        } else if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
             curZColumn = event.data[2];
             console.log(`Cur Z Column: ${curZColumn}`);
             updatePointColors(`z${curZColumn}`);
         }
-        // else if (event.data[0] === 0xe0 && event.data[1] === 0x0) {
-        //     k = Math.floor(event.data[2] / 40);
-        // }
 
         camera.left = xmin;
         camera.right = xmax;
         camera.top = ymax;
         camera.bottom = ymin;
         camera.updateProjectionMatrix();
-    })
-})
+    });
+});
 
-// Animate
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -211,6 +151,6 @@ function animate() {
 
 window.addEventListener("resize", () => {
     if (!camera) return;
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight - 50);
     camera.updateProjectionMatrix();
 });
