@@ -17,6 +17,9 @@ let zDataMap = {};
 let geometry, colors;
 let dataGlobal = [];
 
+let toast = document.getElementById("toast");
+let toastTimer = null;
+
 // --- MIDI Mapping Logic ---
 const midiBindings = {}; // { "status-data1-data2": "functionName" }
 let waitingForMapping = null; // the function we're currently mapping
@@ -142,6 +145,18 @@ navigator.requestMIDIAccess().then((midiAccess) => {
             return;
         }
 
+        // --- Handle z-column change (hardcoded to MIDI 0xe7 0x0) ---
+        if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
+            const newZ = event.data[2];
+            if (curZColumn !== newZ) {
+                curZColumn = newZ;
+                console.log(`Cur Z Column: ${curZColumn}`);
+                updatePointColors(`z${curZColumn}`);
+                showToast(`Z Column: z${curZColumn}`);
+            }
+            return; // don't process as mapped control
+        }
+
         // Execute mapped function
         const func = midiBindings[id];
         if (func) {
@@ -177,3 +192,16 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight - 50);
     camera.updateProjectionMatrix();
 });
+
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("show");
+
+    // Reset timer if already visible
+    if (toastTimer) clearTimeout(toastTimer);
+
+    // Hide after 1.5 seconds of inactivity
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 1500);
+}
