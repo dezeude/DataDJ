@@ -2,164 +2,53 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>Three.js CSV Scatterplot 3D + MIDI Crop Control</title>
-    <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm",
-        "controls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+  <meta charset="UTF-8" />
+  <title>Three.js CSV Scatterplot with Camera Controls</title>
+  <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm"
+        }
       }
-    }
-  </script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
+    </script>
 
-        canvas {
-            display: block;
-        }
-    </style>
+  <script type="module" src="./main.js"></script>
+  <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
-    <script type="module">
-        import * as THREE from "three";
-        import { csvParse } from "d3-dsv";
-        import { OrbitControls } from "controls";
-        import * as midi from "./midi.js";
 
-        midi.getPermission();
+  <div id="toast"></div>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+  <div id="toolbar">
+    <h1>🎛️ Data DJ</h1>
+    <div class="toolbar-right">
+      <div class="file-upload">
+        <button title="Load CSV">
+          📁 Load CSV
+          <input type="file" id="fileInput" accept=".csv" />
+        </button>
+      </div>
+      <button id="settingsBtn" title="Open Settings">⚙️ Settings</button>
+    </div>
+  </div>
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
+  <!-- Settings Panel -->
+  <div id="settingsPanel">
+    <strong>Map MIDI Controls</strong>
+    <button data-func="xmin-inc">X-Min ➕</button>
+    <button data-func="xmin-dec">X-Min ➖</button>
+    <button data-func="xmax-inc">X-Max ➕</button>
+    <button data-func="xmax-dec">X-Max ➖</button>
+    <button data-func="ymin-inc">Y-Min ➕</button>
+    <button data-func="ymin-dec">Y-Min ➖</button>
+    <button data-func="ymax-inc">Y-Max ➕</button>
+    <button data-func="ymax-dec">Y-Max ➖</button>
+    <button data-func="size-inc">Size ➕</button>
+    <button data-func="size-dec">Size ➖</button>
+  </div>
 
-        let camera, points, material, controls;
-        let xmin, xmax, ymin, ymax, zmin, zmax;
-
-        // Load CSV
-        fetch("data.csv")
-            .then((res) => res.text())
-            .then((text) => {
-                const data = csvParse(text);
-
-                const numPoints = data.length;
-                const positions = new Float32Array(numPoints * 3);
-
-                xmin = Infinity; xmax = -Infinity;
-                ymin = Infinity; ymax = -Infinity;
-                zmin = Infinity; zmax = -Infinity;
-
-                data.forEach((row, i) => {
-                    const x = parseFloat(row.x);
-                    const y = parseFloat(row.y);
-                    const z = parseFloat(row.z);
-
-                    positions.set([x, y, z], i * 3);
-
-                    xmin = Math.min(xmin, x);
-                    xmax = Math.max(xmax, x);
-                    ymin = Math.min(ymin, y);
-                    ymax = Math.max(ymax, y);
-                    zmin = Math.min(zmin, z);
-                    zmax = Math.max(zmax, z);
-                });
-
-                // Add some padding
-                xmin -= 10; xmax += 10;
-                ymin -= 10; ymax += 10;
-
-                camera = new THREE.OrthographicCamera(
-                    xmin, xmax, ymax, ymin, 0.1, 5000
-                );
-                camera.position.set(0, 0, (zmax - zmin) * 2);
-
-                controls = new OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-
-                const geometry = new THREE.BufferGeometry();
-                geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-                material = new THREE.PointsMaterial({
-                    size: 2,
-                    color: 0xff5533
-                });
-
-                points = new THREE.Points(geometry, material);
-                scene.add(points);
-
-                // Center on dataset
-                const midX = (xmin + xmax) / 2;
-                const midY = (ymin + ymax) / 2;
-                const midZ = (zmin + zmax) / 2;
-                controls.target.set(midX, midY, midZ);
-                controls.update();
-
-                animate();
-            });
-
-        // Hook up MIDI to control canvas crop
-        navigator.requestMIDIAccess().then((midiAccess) => {
-            midi.listInputsAndOutputs(midiAccess);
-            const step = 5;
-            const sizeStep = 0.5;
-
-            midi.startLoggingMIDIInput(midiAccess, (event) => {
-                if (!camera) return;
-                if (!material) return;
-
-                if (event.data[0] === 0xb0) { // knob turn
-                    if (event.data[1] == 0x10) { // x-min
-                        xmin += (event.data[2] === 0x41 ? -step : step);
-                    }
-                    else if (event.data[1] == 0x11) { // x-max
-                        xmax += (event.data[2] === 0x41 ? -step : step);
-                    }
-                    else if (event.data[1] == 0x12) { // y-min
-                        ymin += (event.data[2] === 0x41 ? -step : step);
-                    }
-                    else if (event.data[1] == 0x13) { // y-max
-                        ymax += (event.data[2] === 0x41 ? -step : step);
-                    }
-                }
-
-                if (event.data[0] === 0xb0 && event.data[1] == 0x14) {
-                    if (event.data[2] === 0x41) {
-                        material.size += sizeStep;
-                    } else if (event.data[2] === 0x1) {
-                        material.size = Math.max(0.1, material.size - sizeStep);
-                    }
-                }
-
-                // Update camera with new bounds
-                camera.left = xmin;
-                camera.right = xmax;
-                camera.top = ymax;
-                camera.bottom = ymin;
-                camera.updateProjectionMatrix();
-            });
-        });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener("resize", () => {
-            if (!camera) return;
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.updateProjectionMatrix();
-        });
-    </script>
 </body>
 
 </html>
