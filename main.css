@@ -177,3 +177,9 @@ canvas {
 .settings-menu button:hover {
     background: #666;
 }
+
+#settingsPanel button,
+#settingsPanel select {
+    margin: 5px;
+    padding: 5px 10px;
+}

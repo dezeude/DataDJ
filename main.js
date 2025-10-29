@@ -11,18 +11,18 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 let camera, points, material;
 let xmin, xmax, ymin, ymax;
-let columns, curZColumn = "5";
-
-let zDataMap = {};
 let geometry, colors;
 let dataGlobal = [];
 
+let dataByMethod = {};
+let curMethod = "umap";
+let curParamValue = 5; // default starting param
 let toast = document.getElementById("toast");
 let toastTimer = null;
 
 // --- MIDI Mapping Logic ---
 const midiBindings = {}; // { "status-data1-data2": "functionName" }
-let waitingForMapping = null; // the function we're currently mapping
+let waitingForMapping = null;
 
 const settingsBtn = document.getElementById("settingsBtn");
 const settingsPanel = document.getElementById("settingsPanel");
@@ -52,50 +52,79 @@ document.getElementById("fileInput").addEventListener("change", (e) => {
     reader.readAsText(file);
 });
 
-// --- Render Data ---
+// --- Data Processing ---
+let paramValuesByMethod = {};
+
 function renderData(data) {
-    dataGlobal = data;
-    columns = Object.keys(data[0]);
-    const zColumns = columns.filter((c) => c.startsWith("z"));
-    const numPoints = data.length;
+    // Separate by method
+    dataByMethod = {};
+    data.forEach(row => {
+        const m = row.method;
+        if (!dataByMethod[m]) dataByMethod[m] = [];
+        dataByMethod[m].push(row);
+    });
+
+    // Store sorted param_value arrays for each method
+    paramValuesByMethod = {};
+    Object.keys(dataByMethod).forEach(m => {
+        const vals = [...new Set(dataByMethod[m].map(d => parseFloat(d.param_value)))].sort((a, b) => a - b);
+        paramValuesByMethod[m] = vals;
+    });
+
+    curMethod = "umap"; // start default
+    curParamValue = paramValuesByMethod[curMethod][0]; // first valid param
+    renderSubset();
+}
+
+// --- Render Subset (filtered by method + param) ---
+function renderSubset() {
+    if (!dataByMethod[curMethod]) {
+        console.warn(`No data for method ${curMethod}`);
+        return;
+    }
+
+    // Find nearest available param_value to curParamValue
+    const subset = dataByMethod[curMethod].filter(
+        (r) => Math.abs(parseFloat(r.param_value) - curParamValue) < 1e-6
+    );
+
+    if (subset.length === 0) {
+        console.warn(`No subset for ${curMethod} param=${curParamValue}`);
+        return;
+    }
+
+    const numPoints = subset.length;
     const positions = new Float32Array(numPoints * 3);
-    colors = new Float32Array(numPoints * 3);
+    const colors = new Float32Array(numPoints * 3);
+    let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
 
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-
-    data.forEach((row, i) => {
-        const x = parseFloat(row.x);
-        const y = parseFloat(row.y);
+    subset.forEach((row, i) => {
+        const x = parseFloat(row.dim1);
+        const y = parseFloat(row.dim2);
         positions.set([x, y, 0], i * 3);
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);
         minY = Math.min(minY, y);
         maxY = Math.max(maxY, y);
-    });
 
-    // Normalize z columns
-    zColumns.forEach((zCol) => {
-        const zVals = data.map((r) => parseFloat(r[zCol]));
-        const minZ = Math.min(...zVals);
-        const maxZ = Math.max(...zVals);
-        const rangeZ = maxZ - minZ || 1;
-        const normed = new Float32Array(zVals.length);
-        for (let i = 0; i < zVals.length; i++) {
-            normed[i] = (zVals[i] - minZ) / rangeZ;
-        }
-        zDataMap[zCol] = normed;
+        // Color by label (optional, gives variety)
+        const label = parseInt(row.label) || 0;
+        const color = new THREE.Color().setHSL((label % 10) / 10, 1.0, 0.5);
+        colors.set([color.r, color.g, color.b], i * 3);
     });
 
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    updatePointColors(`z${curZColumn}`);
-
-    material = new THREE.PointsMaterial({
-        size: 2,
-        vertexColors: true,
-    });
+    if (!material)
+        material = new THREE.PointsMaterial({
+            size: 2,
+            vertexColors: true,
+        });
 
     if (points) scene.remove(points);
     points = new THREE.Points(geometry, material);
@@ -106,23 +135,17 @@ function renderData(data) {
     ymin = minY - 10;
     ymax = maxY + 10;
 
-    camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
-    camera.position.z = 10;
-    animate();
-}
-
-function updatePointColors(zColName) {
-    if (!geometry || !zDataMap[zColName]) return;
-    const zNorms = zDataMap[zColName];
-    const color = new THREE.Color();
-    for (let i = 0; i < zNorms.length; i++) {
-        const zNorm = zNorms[i];
-        color.setHSL(0.7 - 0.7 * zNorm, 1.0, 0.5);
-        colors[i * 3] = color.r;
-        colors[i * 3 + 1] = color.g;
-        colors[i * 3 + 2] = color.b;
+    if (!camera) {
+        camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
+        camera.position.z = 10;
+        animate();
+    } else {
+        camera.left = xmin;
+        camera.right = xmax;
+        camera.top = ymax;
+        camera.bottom = ymin;
+        camera.updateProjectionMatrix();
     }
-    geometry.attributes.color.needsUpdate = true;
 }
 
 // --- MIDI Handling ---
@@ -135,42 +158,80 @@ navigator.requestMIDIAccess().then((midiAccess) => {
         if (!camera) return;
         const id = `${event.data[0]}-${event.data[1]}-${event.data[2]}`;
 
-        // Mapping mode
+        // --- Mapping Mode ---
         if (waitingForMapping) {
             midiBindings[id] = waitingForMapping;
             console.log(`Mapped ${id} → ${waitingForMapping}`);
-            const btn = settingsPanel.querySelector(`button[data-func='${waitingForMapping}']`);
+            const btn = settingsPanel.querySelector(
+                `button[data-func='${waitingForMapping}']`
+            );
             if (btn) btn.textContent = `${waitingForMapping} ✅`;
             waitingForMapping = null;
             return;
         }
 
-        // --- Handle z-column change (hardcoded to MIDI 0xe7 0x0) ---
-        if (event.data[0] === 0xe7 && event.data[1] === 0x0) {
-            const newZ = event.data[2];
-            if (curZColumn !== newZ) {
-                curZColumn = newZ;
-                console.log(`Cur Z Column: ${curZColumn}`);
-                updatePointColors(`z${curZColumn}`);
-                showToast(`Z Column: z${curZColumn}`);
-            }
-            return; // don't process as mapped control
+        // --- Parameter Control (mapped MIDI) ---
+        const func = midiBindings[id];
+        if (func === "param-control") {
+            const vals = paramValuesByMethod[curMethod];
+            if (!vals || vals.length === 0) return;
+
+            let curIndex = vals.indexOf(curParamValue);
+            if (curIndex === -1) curIndex = 0;
+
+            const direction = event.data[2] === 0x41 ? -1 : 1; // knob direction
+            curIndex = Math.min(vals.length - 1, Math.max(0, curIndex + direction));
+
+            curParamValue = vals[curIndex];
+            showToast(`${curMethod} → ${curParamValue}`);
+            renderSubset();
+            return;
         }
 
-        // Execute mapped function
-        const func = midiBindings[id];
+
+        // --- Camera + Point Size Controls ---
         if (func) {
             switch (func) {
-                case "xmin-inc": xmin += step; break;
-                case "xmin-dec": xmin -= step; break;
-                case "xmax-inc": xmax += step; break;
-                case "xmax-dec": xmax -= step; break;
-                case "ymin-inc": ymin += step; break;
-                case "ymin-dec": ymin -= step; break;
-                case "ymax-inc": ymax += step; break;
-                case "ymax-dec": ymax -= step; break;
-                case "size-inc": material.size += sizeStep; break;
-                case "size-dec": material.size = Math.max(0.1, material.size - sizeStep); break;
+                case "xmin-inc":
+                    xmin += step;
+                    showToast(`Xmin → ${Math.round(xmin)}`)
+                    break;
+                case "xmin-dec":
+                    xmin -= step;
+                    showToast(`Xmin → ${Math.round(xmin)}`)
+                    break;
+                case "xmax-inc":
+                    xmax += step;
+                    showToast(`Xmax → ${Math.round(xmax)}`)
+                    break;
+                case "xmax-dec":
+                    xmax -= step;
+                    showToast(`Xmax → ${Math.round(xmax)}`)
+                    break;
+                case "ymin-inc":
+                    ymin += step;
+                    showToast(`Ymin → ${Math.round(ymin)}`)
+                    break;
+                case "ymin-dec":
+                    ymin -= step;
+                    showToast(`Ymin → ${Math.round(ymin)}`)
+                    break;
+                case "ymax-inc":
+                    ymax += step;
+                    showToast(`Ymax → ${Math.round(ymax)}`)
+                    break;
+                case "ymax-dec":
+                    ymax -= step;
+                    showToast(`Ymax → ${Math.round(ymax)}`)
+                    break;
+                case "size-inc":
+                    material.size += sizeStep;
+                    showToast(`Dot Size → ${Math.round(material.size)}`)
+                    break;
+                case "size-dec":
+                    material.size = Math.max(0.1, material.size - sizeStep);
+                    showToast(`Dot Size → ${Math.round(material.size)}`)
+                    break;
             }
 
             camera.left = xmin;
@@ -193,14 +254,19 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
 });
 
+// --- Method Switch ---
+document.getElementById("methodSelect").addEventListener("change", (e) => {
+    curMethod = e.target.value;
+    showToast(`Method: ${curMethod}`);
+    renderSubset();
+});
+
+// --- Toast UI ---
 function showToast(message) {
     toast.textContent = message;
     toast.classList.add("show");
 
-    // Reset timer if already visible
     if (toastTimer) clearTimeout(toastTimer);
-
-    // Hide after 1.5 seconds of inactivity
     toastTimer = setTimeout(() => {
         toast.classList.remove("show");
     }, 1500);

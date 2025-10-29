@@ -3,24 +3,31 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Three.js CSV Scatterplot with Camera Controls</title>
-  <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm"
-        }
-      }
-    </script>
+  <title>🎛️ Data DJ — Three.js MIDI Scatterplot</title>
 
-  <script type="module" src="./demo.js"></script>
-  <link rel="stylesheet" href="main.css">
+  <!-- Import maps for ES modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm"
+      }
+    }
+  </script>
+
+  <!-- Main script (rename to match your JS file) -->
+  <script type="module" src="./main.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="main.css" />
 </head>
 
 <body>
 
+  <!-- Toast Notification -->
   <div id="toast"></div>
 
+  <!-- Toolbar -->
   <div id="toolbar">
     <h1>🎛️ Data DJ</h1>
     <div class="toolbar-right">
@@ -36,17 +43,31 @@
 
   <!-- Settings Panel -->
   <div id="settingsPanel">
-    <strong>Map MIDI Controls</strong>
-    <button data-func="xmin-inc">X-Min ➕</button>
-    <button data-func="xmin-dec">X-Min ➖</button>
-    <button data-func="xmax-inc">X-Max ➕</button>
-    <button data-func="xmax-dec">X-Max ➖</button>
-    <button data-func="ymin-inc">Y-Min ➕</button>
-    <button data-func="ymin-dec">Y-Min ➖</button>
-    <button data-func="ymax-inc">Y-Max ➕</button>
-    <button data-func="ymax-dec">Y-Max ➖</button>
-    <button data-func="size-inc">Size ➕</button>
-    <button data-func="size-dec">Size ➖</button>
+    <strong>🎚️ Map MIDI Controls</strong>
+
+    <div class="midi-grid">
+      <button data-func="xmin-inc">X-Min ➕</button>
+      <button data-func="xmin-dec">X-Min ➖</button>
+      <button data-func="xmax-inc">X-Max ➕</button>
+      <button data-func="xmax-dec">X-Max ➖</button>
+
+      <button data-func="ymin-inc">Y-Min ➕</button>
+      <button data-func="ymin-dec">Y-Min ➖</button>
+      <button data-func="ymax-inc">Y-Max ➕</button>
+      <button data-func="ymax-dec">Y-Max ➖</button>
+
+      <button data-func="size-inc">Size ➕</button>
+      <button data-func="size-dec">Size ➖</button>
+
+      <button data-func="param-control">Parameter Control 🎚️</button>
+    </div>
+
+    <hr />
+    <label for="methodSelect">Visualization Method:</label>
+    <select id="methodSelect">
+      <option value="umap">UMAP</option>
+      <option value="tsne">t-SNE</option>
+    </select>
   </div>
 
 </body>
