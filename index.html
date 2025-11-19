@@ -3,9 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>🎛️ Data DJ — Three.js MIDI Scatterplot</title>
+  <title>Data DJ — UMAP / TSNE / PHATE Explorer</title>
 
-  <!-- Import maps for ES modules -->
+  <!-- Import maps -->
   <script type="importmap">
     {
       "imports": {
@@ -15,59 +15,85 @@
     }
   </script>
 
-  <!-- Main script (rename to match your JS file) -->
   <script type="module" src="./main.js"></script>
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="main.css" />
+  <link rel="stylesheet" href="main.css">
 </head>
 
 <body>
 
-  <!-- Toast Notification -->
+  <!-- Toast Notifications -->
   <div id="toast"></div>
 
   <!-- Toolbar -->
   <div id="toolbar">
     <h1>🎛️ Data DJ</h1>
+
     <div class="toolbar-right">
+
+      <!-- File loader -->
       <div class="file-upload">
         <button title="Load CSV">
           📁 Load CSV
           <input type="file" id="fileInput" accept=".csv" />
         </button>
       </div>
+
+      <!-- Reset view -->
+      <button id="resetViewBtn" title="Reset Visualization">🔄 Reset</button>
+
+      <!-- Settings menu -->
       <button id="settingsBtn" title="Open Settings">⚙️ Settings</button>
     </div>
   </div>
 
   <!-- Settings Panel -->
   <div id="settingsPanel">
-    <strong>🎚️ Map MIDI Controls</strong>
 
-    <div class="midi-grid">
+    <strong>MIDI Control Mapping</strong>
+
+    <!-- CAMERA CONTROLS -->
+    <div class="section">
+      <h3>View Controls</h3>
       <button data-func="xmin-inc">X-Min ➕</button>
       <button data-func="xmin-dec">X-Min ➖</button>
       <button data-func="xmax-inc">X-Max ➕</button>
       <button data-func="xmax-dec">X-Max ➖</button>
-
       <button data-func="ymin-inc">Y-Min ➕</button>
       <button data-func="ymin-dec">Y-Min ➖</button>
       <button data-func="ymax-inc">Y-Max ➕</button>
       <button data-func="ymax-dec">Y-Max ➖</button>
-
-      <button data-func="size-inc">Size ➕</button>
-      <button data-func="size-dec">Size ➖</button>
-
-      <button data-func="param-control">Parameter Control 🎚️</button>
+      <button data-func="size-inc">Point Size ➕</button>
+      <button data-func="size-dec">Point Size ➖</button>
     </div>
 
-    <hr />
-    <label for="methodSelect">Visualization Method:</label>
-    <select id="methodSelect">
-      <option value="umap">UMAP</option>
-      <option value="tsne">t-SNE</option>
-    </select>
+    <!-- METHOD SWITCH -->
+    <div class="section">
+      <h3>Method Selection</h3>
+      <button data-func="method-switch">Switch Method</button>
+
+      <label for="methodSelect">Current Method</label>
+      <select id="methodSelect">
+        <option value="umap">UMAP</option>
+        <option value="tsne">TSNE</option>
+        <option value="phate">PHATE</option>
+      </select>
+    </div>
+
+    <!-- PARAMETER MAPPING -->
+    <div class="section">
+      <h3>Parameter Controls</h3>
+
+      <!-- This will be populated dynamically -->
+      <div id="paramMappingContainer">
+        <!-- Example of dynamic content JS will create:
+        <div class="param-row">
+           <span>UMAP n_neighbors</span>
+           <button data-param="umap_n_neighbors">Map MIDI</button>
+        </div>
+        -->
+      </div>
+    </div>
+
   </div>
 
 </body>

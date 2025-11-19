@@ -1,185 +1,218 @@
-/* ===== General Layout ===== */
+/* -------------------------------------------------------
+   Global Layout
+------------------------------------------------------- */
 body {
     margin: 0;
+    padding: 0;
     overflow: hidden;
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", system-ui, Arial, sans-serif;
     background: #111;
     color: #eee;
 }
 
-/* ===== Toolbar ===== */
+/* -------------------------------------------------------
+   Toolbar
+------------------------------------------------------- */
 #toolbar {
-    position: fixed;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 50px;
-    background: linear-gradient(90deg, #1c1c1c, #2c2c2c);
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 15px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    z-index: 10;
+    padding: 0 16px;
+    box-sizing: border-box;
 }
 
 #toolbar h1 {
-    font-size: 1rem;
-    color: #f0f0f0;
-    letter-spacing: 0.5px;
+    font-size: 20px;
     margin: 0;
+    font-weight: 600;
+    color: #ffce6b;
 }
 
 .toolbar-right {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-right: 1cm;
 }
 
-/* ===== File Upload ===== */
-.file-upload {
-    position: relative;
-    overflow: hidden;
-    display: inline-block;
-}
-
+/* File upload button */
 .file-upload button {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 8px 14px;
+    position: relative;
+    display: inline-block;
+    padding: 6px 16px;
     border-radius: 4px;
+    background: #333;
+    border: 1px solid #444;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-}
-
-.file-upload button:hover {
-    background: #555;
+    color: #ddd;
 }
 
 .file-upload input[type="file"] {
     position: absolute;
-    top: 0;
-    left: 0;
     opacity: 0;
     cursor: pointer;
-    width: 100%;
     height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
 }
 
-/* ===== Settings Button ===== */
-#settingsBtn {
-    background: #555;
-    color: white;
-    border: none;
-    padding: 8px 14px;
+/* Toolbar buttons */
+#toolbar button {
+    background: #333;
+    border: 1px solid #444;
+    padding: 6px 16px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.2s;
+    color: #ddd;
+    font-size: 14px;
+    transition: 0.15s;
 }
 
-#settingsBtn:hover {
-    background: #666;
+#toolbar button:hover {
+    background: #444;
 }
 
-/* ===== Settings Panel ===== */
+/* -------------------------------------------------------
+   Settings Panel
+------------------------------------------------------- */
 #settingsPanel {
-    position: fixed;
-    top: 60px;
-    right: 15px;
+    position: absolute;
+    top: 55px;
+    right: 10px;
+    width: 260px;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 16px;
     display: none;
     flex-direction: column;
-    gap: 8px;
-    background: rgba(25, 25, 25, 0.95);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-    z-index: 20;
-    width: 200px;
+    gap: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+#settingsPanel h3 {
+    margin: 4px 0 8px;
+    font-weight: 600;
+    color: #ffce6b;
+}
+
+/* Section groups */
+.section {
+    background: #252525;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #333;
 }
 
 #settingsPanel strong {
-    color: #f0f0f0;
-    margin-bottom: 5px;
-    font-size: 0.95rem;
-    text-align: center;
+    font-size: 16px;
+    color: #fff;
 }
 
+/* Buttons inside the settings panel */
 #settingsPanel button {
+    width: 100%;
+    margin: 4px 0;
     background: #333;
-    color: #eee;
-    border: none;
+    border: 1px solid #444;
+    padding: 6px 12px;
     border-radius: 4px;
-    padding: 8px 10px;
     cursor: pointer;
-    font-size: 0.85rem;
-    transition: background 0.2s, transform 0.1s;
+    color: #eee;
+    text-align: left;
 }
 
 #settingsPanel button:hover {
-    background: #555;
-    transform: scale(1.03);
+    background: #444;
 }
 
-canvas {
-    display: block;
+/* Param mapping rows */
+.param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    padding: 6px;
+    margin-bottom: 6px;
+    border-radius: 4px;
 }
 
-/* ===== Toast Notification ===== */
+.param-row span {
+    font-size: 14px;
+}
+
+.param-row button {
+    width: auto;
+    padding: 4px 10px;
+}
+
+/* Method dropdown */
+#methodSelect {
+    background: #333;
+    border: 1px solid #444;
+    color: #eee;
+    padding: 6px;
+    border-radius: 4px;
+    width: 100%;
+    margin-top: 6px;
+}
+
+/* -------------------------------------------------------
+   Toast notifications
+------------------------------------------------------- */
 #toast {
-    position: fixed;
-    bottom: 30px;
+    position: absolute;
+    top: 60px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(40, 40, 40, 0.9);
-    color: #fff;
+    background: #222;
     padding: 10px 20px;
     border-radius: 6px;
-    font-size: 0.95rem;
+    color: #ffce6b;
+    font-size: 14px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease-in-out;
-    z-index: 100;
+    transition: opacity 0.25s;
+    border: 1px solid #444;
 }
 
 #toast.show {
     opacity: 1;
 }
 
-.settings-menu {
-    position: fixed;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #222;
-    padding: 12px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 20;
+/* -------------------------------------------------------
+   Scrollbar styling
+------------------------------------------------------- */
+#settingsPanel::-webkit-scrollbar {
+    width: 8px;
 }
 
-.settings-menu button {
+#settingsPanel::-webkit-scrollbar-thumb {
     background: #444;
-    color: white;
-    border: none;
-    padding: 8px 12px;
     border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
 }
 
-.settings-menu button:hover {
-    background: #666;
+#settingsPanel::-webkit-scrollbar-track {
+    background: #222;
 }
 
-#settingsPanel button,
-#settingsPanel select {
-    margin: 5px;
-    padding: 5px 10px;
+/* -------------------------------------------------------
+   Mobile adjustments
+------------------------------------------------------- */
+@media (max-width: 600px) {
+    #settingsPanel {
+        width: 95%;
+        right: 2.5%;
+    }
+
+    #toolbar h1 {
+        font-size: 18px;
+    }
 }
