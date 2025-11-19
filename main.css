@@ -1,218 +1,129 @@
-/* -------------------------------------------------------
-   Global Layout
-------------------------------------------------------- */
+/* ===== GENERAL ===== */
 body {
     margin: 0;
-    padding: 0;
+    font-family: Arial, sans-serif;
     overflow: hidden;
-    font-family: "Inter", system-ui, Arial, sans-serif;
     background: #111;
-    color: #eee;
+    color: white;
 }
 
-/* -------------------------------------------------------
-   Toolbar
-------------------------------------------------------- */
+/* ===== TOOLBAR ===== */
 #toolbar {
-    width: 100%;
-    height: 50px;
-    background: #1a1a1a;
-    border-bottom: 1px solid #333;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
-    box-sizing: border-box;
+    align-items: center;
+    height: 50px;
+    padding: 0 15px;
+    background: #222;
+    border-bottom: 2px solid #444;
 }
 
 #toolbar h1 {
-    font-size: 20px;
     margin: 0;
-    font-weight: 600;
-    color: #ffce6b;
+    font-size: 20px;
+    color: #0ff;
 }
 
 .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
 }
 
-/* File upload button */
-.file-upload button {
-    position: relative;
-    display: inline-block;
-    padding: 6px 16px;
-    border-radius: 4px;
-    background: #333;
-    border: 1px solid #444;
-    cursor: pointer;
-    color: #ddd;
-}
-
+/* File Upload */
 .file-upload input[type="file"] {
     position: absolute;
     opacity: 0;
-    cursor: pointer;
-    height: 100%;
-    width: 100%;
-    left: 0;
-    top: 0;
+    pointer-events: none;
 }
 
-/* Toolbar buttons */
-#toolbar button {
+.file-upload button {
     background: #333;
-    border: 1px solid #444;
-    padding: 6px 16px;
-    border-radius: 4px;
+    border: 1px solid #555;
+    padding: 6px 12px;
     cursor: pointer;
-    color: #ddd;
-    font-size: 14px;
-    transition: 0.15s;
+    color: #eee;
 }
 
-#toolbar button:hover {
-    background: #444;
+#settingsBtn {
+    background: #333;
+    border: 1px solid #666;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: #eee;
 }
 
-/* -------------------------------------------------------
-   Settings Panel
-------------------------------------------------------- */
+/* ===== SETTINGS PANEL ===== */
 #settingsPanel {
-    position: absolute;
-    top: 55px;
-    right: 10px;
-    width: 260px;
-    max-height: calc(100vh - 70px);
-    overflow-y: auto;
-    background: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 16px;
     display: none;
     flex-direction: column;
-    gap: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-}
-
-#settingsPanel h3 {
-    margin: 4px 0 8px;
-    font-weight: 600;
-    color: #ffce6b;
-}
-
-/* Section groups */
-.section {
-    background: #252525;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #333;
+    padding: 15px;
+    background: #222;
+    border-left: 2px solid #444;
+    position: absolute;
+    right: 0;
+    top: 50px;
+    width: 260px;
+    height: calc(100% - 100px);
+    overflow-y: auto;
 }
 
 #settingsPanel strong {
-    font-size: 16px;
-    color: #fff;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: block;
 }
 
-/* Buttons inside the settings panel */
-#settingsPanel button {
-    width: 100%;
-    margin: 4px 0;
-    background: #333;
-    border: 1px solid #444;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #eee;
-    text-align: left;
-}
-
-#settingsPanel button:hover {
-    background: #444;
-}
-
-/* Param mapping rows */
-.param-row {
+.mapping-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
-    padding: 6px;
-    margin-bottom: 6px;
-    border-radius: 4px;
+    margin-bottom: 8px;
 }
 
-.param-row span {
-    font-size: 14px;
-}
-
-.param-row button {
-    width: auto;
-    padding: 4px 10px;
-}
-
-/* Method dropdown */
-#methodSelect {
+.mapping-row button {
+    flex: 1;
     background: #333;
-    border: 1px solid #444;
+    border: 1px solid #555;
+    padding: 8px;
+    margin-right: 6px;
     color: #eee;
-    padding: 6px;
-    border-radius: 4px;
-    width: 100%;
-    margin-top: 6px;
+    cursor: pointer;
 }
 
-/* -------------------------------------------------------
-   Toast notifications
-------------------------------------------------------- */
+.mapping-row select {
+    width: 80px;
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    padding: 5px;
+}
+
+/* ===== METHOD SELECT ===== */
+#methodSelect {
+    margin-top: 10px;
+    padding: 6px;
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+}
+
+/* ===== TOAST MESSAGE ===== */
 #toast {
-    position: absolute;
-    top: 60px;
+    position: fixed;
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    background: #222;
+    background: #0aa;
+    color: #000;
     padding: 10px 20px;
-    border-radius: 6px;
-    color: #ffce6b;
-    font-size: 14px;
+    border-radius: 5px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s;
-    border: 1px solid #444;
+    transition: opacity 0.3s ease-out;
+    font-weight: bold;
 }
 
 #toast.show {
     opacity: 1;
-}
-
-/* -------------------------------------------------------
-   Scrollbar styling
-------------------------------------------------------- */
-#settingsPanel::-webkit-scrollbar {
-    width: 8px;
-}
-
-#settingsPanel::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 4px;
-}
-
-#settingsPanel::-webkit-scrollbar-track {
-    background: #222;
-}
-
-/* -------------------------------------------------------
-   Mobile adjustments
-------------------------------------------------------- */
-@media (max-width: 600px) {
-    #settingsPanel {
-        width: 95%;
-        right: 2.5%;
-    }
-
-    #toolbar h1 {
-        font-size: 18px;
-    }
 }

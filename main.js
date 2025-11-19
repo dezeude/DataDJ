@@ -335,13 +335,13 @@ function renderForCurrentParams() {
     points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    let xmin, xmax, ymin, ymax;
+    let xmin, xmax, ymin, ymax, margin = 0.01;
 
     // camera bounds
-    xmin = minX - 10;
-    xmax = maxX + 10;
-    ymin = minY - 10;
-    ymax = maxY + 10;
+    xmin = minX - margin;
+    xmax = maxX + margin;
+    ymin = minY - margin;
+    ymax = maxY + margin;
 
     if (!camera) {
         camera = new THREE.OrthographicCamera(xmin, xmax, ymax, ymin, 0.1, 2000);
@@ -397,7 +397,7 @@ navigator.requestMIDIAccess().then((midiAccess) => {
         // use status-data1 as id
         const id = `${event.data[0]}-${event.data[1]}`;
         const value = event.data[2];
-        console.log(event)
+        console.log("midi input")
 
         // If we are waiting for mapping, capture this control
         if (waitingForMapping) {

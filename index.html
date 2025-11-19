@@ -32,10 +32,10 @@
 
       <!-- File loader -->
       <div class="file-upload">
-        <button title="Load CSV">
+        <label for="fileInput" title="Load CSV">
           📁 Load CSV
           <input type="file" id="fileInput" accept=".csv" />
-        </button>
+        </label>
       </div>
 
       <!-- Reset view -->
@@ -54,23 +54,94 @@
     <!-- CAMERA CONTROLS -->
     <div class="section">
       <h3>View Controls</h3>
-      <button data-func="xmin-inc">X-Min ➕</button>
-      <button data-func="xmin-dec">X-Min ➖</button>
-      <button data-func="xmax-inc">X-Max ➕</button>
-      <button data-func="xmax-dec">X-Max ➖</button>
-      <button data-func="ymin-inc">Y-Min ➕</button>
-      <button data-func="ymin-dec">Y-Min ➖</button>
-      <button data-func="ymax-inc">Y-Max ➕</button>
-      <button data-func="ymax-dec">Y-Max ➖</button>
-      <button data-func="size-inc">Point Size ➕</button>
-      <button data-func="size-dec">Point Size ➖</button>
+
+      <div class="mapping-row">
+        <button data-func="xmin-inc">X-Min ➕</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+
+      <div class="mapping-row">
+        <button data-func="xmin-dec">X-Min ➖</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+
+      <div class="mapping-row">
+        <button data-func="xmax-inc">X-Min ➕</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="xmax-dec">X-Max ➖</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="ymin-inc">Y-Min ➕</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="ymin-dec">Y-Min ➖</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="ymax-inc">Y-Max ➕</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="ymax-dec">Y-Max ➖</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="size-inc">Size ➕</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <div class="mapping-row">
+        <button data-func="size-dec">Size ➖</button>
+        <select class="midi-type">
+          <option value="button">Button</option>
+          <option value="knob">Knob</option>
+          <option value="fader">Fader</option>
+        </select>
+      </div>
+      <button data-func="size-dec">Size ➖</button>
     </div>
 
     <!-- METHOD SWITCH -->
     <div class="section">
-      <h3>Method Selection</h3>
-      <button data-func="method-switch">Switch Method</button>
-
       <label for="methodSelect">Current Method</label>
       <select id="methodSelect">
         <option value="umap">UMAP</option>
