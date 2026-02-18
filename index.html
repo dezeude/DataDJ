@@ -1,54 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8" />
-  <title>Three.js CSV Scatterplot with Camera Controls</title>
-  <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "d3-dsv": "https://cdn.jsdelivr.net/npm/d3-dsv@3/+esm"
-        }
-      }
-    </script>
-
-  <script type="module" src="./main.js"></script>
-  <link rel="stylesheet" href="main.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data DJ</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
 </head>
 
 <body>
-
-  <div id="toast"></div>
-
-  <div id="toolbar">
-    <h1>🎛️ Data DJ</h1>
-    <div class="toolbar-right">
-      <div class="file-upload">
-        <button title="Load CSV">
-          📁 Load CSV
-          <input type="file" id="fileInput" accept=".csv" />
-        </button>
+  <div id="app">
+    <div class="header">
+      <div class="header-left">
+        <input type="file" accept=".csv" id="input-file">
       </div>
-      <button id="settingsBtn" title="Open Settings">⚙️ Settings</button>
+      <div class="header-right">
+        <!-- TODO: Show grid lines using textbox setting option -->
+        <div class="axis-assign">
+          <div class="axis">
+            Color: <select id="color-select">
+              <option value="">Column</option>
+            </select>
+          </div>
+          <button class="bind" id="bind-column">Bind</button>
+          <div class="axis">
+            Control Column: <select id="control-column">
+              <option value="">Column</option>
+            </select>
+          </div>
+          <button class="bind" id="bind-value">Bind</button>
+          <div class="axis">
+            Control Value: <select id="control-value">
+            </select>
+          </div>
+          <div class="axis">
+
+            X-axis: <select id="select-xaxis">
+              <option value="">Column</option>
+            </select>
+          </div>
+          <div class="axis">
+
+            Y-axis: <select id="select-yaxis">
+              <option value="">Column</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+      <!-- For Three.js^ -->
+      <!-- <div class="canvas-overlay"> -->
+      <div class="camera-config">
+        <p>
+          === Camera === <br />
+          Top: <span id="camera-top"></span> <br />
+          Bottom: <span id="camera-bottom"></span> <br />
+          Left: <span id="camera-left"></span> <br />
+          Right: <span id="camera-right"></span> <br />
+          Mouse: (<span id="mouse-left"></span>, <span id="mouse-right"></span>)
+        </p>
+      </div>
+      <div id="toast" class="hidden"></div>
+      <!-- </div> -->
     </div>
   </div>
-
-  <!-- Settings Panel -->
-  <div id="settingsPanel">
-    <strong>Map MIDI Controls</strong>
-    <button data-func="xmin-inc">X-Min ➕</button>
-    <button data-func="xmin-dec">X-Min ➖</button>
-    <button data-func="xmax-inc">X-Max ➕</button>
-    <button data-func="xmax-dec">X-Max ➖</button>
-    <button data-func="ymin-inc">Y-Min ➕</button>
-    <button data-func="ymin-dec">Y-Min ➖</button>
-    <button data-func="ymax-inc">Y-Max ➕</button>
-    <button data-func="ymax-dec">Y-Max ➖</button>
-    <button data-func="size-inc">Size ➕</button>
-    <button data-func="size-dec">Size ➖</button>
-  </div>
-
 </body>
+
+<script type="module" src="/src/main.js" defer></script>
 
 </html>
