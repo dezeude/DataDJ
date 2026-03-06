@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { newMessage } from './toast';
 import { Lut } from 'three/addons/math/Lut.js';
-import { color } from 'three/tsl';
 
 
 const scene = new THREE.Scene();
@@ -136,10 +135,7 @@ function addRandomPoints(count: number) {
     pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, posSize));
     pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, colorSize));
 
-    const points = new THREE.Points(pointsGeometry, pointsMaterial);
-
-    scene.add(points);
-
+    drawPoints()
 }
 
 const coordsPerPoint = 3;
@@ -263,8 +259,7 @@ function setAllPointColors(red: number, green: number, blue: number, alpha = 1) 
 function renderColumns() {
     pointsGeometry.setAttribute("position", new THREE.BufferAttribute(pointPositionsBuffer, coordsPerPoint))
     pointsGeometry.setAttribute("color", new THREE.BufferAttribute(pointColorsBuffer, channelsPerColor))
-    const points = new THREE.Points(pointsGeometry, pointsMaterial)
-    scene.add(points)
+    drawPoints()
 }
 
 function clearPoints() {
@@ -296,7 +291,13 @@ function renderPoints(x: ArrayLike<number>, y: ArrayLike<number>) {
     }
     pointsGeometry.setAttribute("position", new THREE.BufferAttribute(pointPositionsBuffer, coordsPerPoint))
     pointsGeometry.setAttribute("color", new THREE.BufferAttribute(pointColorsBuffer, channelsPerColor))
+    drawPoints()
+}
+
+function drawPoints() {
     const points = new THREE.Points(pointsGeometry, pointsMaterial)
+    points.frustumCulled = false;
+    points.geometry.computeBoundingSphere();
     scene.add(points)
 }
 

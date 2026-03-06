@@ -19,6 +19,17 @@
     <div class="header">
       <div class="header-left">
         <input type="file" accept=".csv" id="input-file">
+        <div class="filter-container">
+          <button id="toggle-filters" class="main-btn">Filters</button>
+
+          <div id="filter-dropdown" class="dropdown hidden">
+            <div id="filter-list">
+            </div>
+            <div class="dropdown-actions">
+              <button id="add-filter-row">+ Add Filter</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="header-right">
         <!-- TODO: Show grid lines using textbox setting option -->
@@ -26,17 +37,6 @@
           <div class="axis">
             Color: <select id="color-select">
               <option value="">Column</option>
-            </select>
-          </div>
-          <button class="bind" id="bind-column">Bind</button>
-          <div class="axis">
-            Control Column: <select id="control-column">
-              <option value="">Column</option>
-            </select>
-          </div>
-          <button class="bind" id="bind-value">Bind</button>
-          <div class="axis">
-            Control Value: <select id="control-value">
             </select>
           </div>
           <div class="axis">

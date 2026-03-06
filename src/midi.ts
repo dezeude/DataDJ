@@ -1,19 +1,26 @@
 let midiAccess: MIDIAccess;
-navigator.requestMIDIAccess().then((access) => midiAccess = access)
 
-// let lastMessage: Uint8Array<ArrayBuffer> | null = null;
-// addMidiEventListener((event) => {
-//     lastMessage = event.data;
-// })
+export function init() {
+    getPermission()
+    navigator.requestMIDIAccess().then(handleAccessGranted, onMIDIFailure)
+}
 
-// function getLastMidiMessage(){
-//     const msg = lastMessage;
-//     lastMessage = null;
-//     return msg;
-// }
+function handleAccessGranted(access: MIDIAccess) {
+    midiAccess = access;
+    console.log(midiAccess.inputs, midiAccess.outputs);
+    midiAccess.onstatechange = (event) => {
+        const port = event.port;
+        const state = port?.state; // "connected" or "disconnected"
+        const name = port?.name;
+        const type = port?.type; // "input" or "output"
+
+        console.log(`${type}: Port ${name} is now ${state}`);
+        console.log(midiAccess.inputs, midiAccess.outputs)
+    }
+}
 
 function getPermission() {
-    navigator.permissions.query({ name: "midi", sysex: true }).then((result) => {
+    navigator.permissions.query({ name: "midi" }).then((result) => {
         if (result.state === "granted") {
             // Access granted.
             console.log('Access granted')
@@ -27,12 +34,6 @@ function getPermission() {
         // Permission was denied by user prompt or permission policy
     });
 }
-
-// let ctx = null; // global MIDIAccess object (context)
-// function onMIDISuccess(midiAccess: MIDIAccess) {
-//     console.log("MIDI ready!");
-//     ctx = midiAccess; // store in the global (in real usage, would probably keep in an object instance)
-// }
 
 function onMIDIFailure(msg: string) {
     console.error(`Failed to get MIDI access - ${msg}`);
@@ -68,7 +69,6 @@ function startLoggingMIDIInput(callback: (event: MIDIMessageEvent) => void) {
     let first = true;
     // For some reason the device has 2 input port/channels.
     // So, we'll only listen to one of them.
-    console.log(midiAccess.inputs)
     midiAccess.inputs.forEach((entry) => {
         if (first)
             console.log(entry)
@@ -77,18 +77,11 @@ function startLoggingMIDIInput(callback: (event: MIDIMessageEvent) => void) {
     });
 }
 
-function addMidiEventListener(callback: (event: MIDIMessageEvent) => void) {
+export function addMidiEventListener(callback: (event: MIDIMessageEvent) => void) {
     let first = true;
-
     midiAccess.inputs.forEach((entry) => {
-        if (first) {
+        if (first)
             entry.addEventListener('midimessage', callback);
-            first = false;
-        }
+        first = false;
     });
 }
-
-
-
-
-export { addMidiEventListener, getPermission, onMIDIFailure, listInputsAndOutputs, startLoggingMIDIInput };
