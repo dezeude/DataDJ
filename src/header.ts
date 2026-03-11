@@ -4,6 +4,7 @@ import * as parser from './file';
 import * as midi from './midi'
 import { Lut } from 'three/addons/math/Lut.js';
 import { BindController } from './inputManager';
+import { LineGeometry } from 'three/examples/jsm/Addons.js';
 
 function arrEq<T>(a: ArrayLike<T> | null, b: ArrayLike<T> | null) {
     // Check for null or undefined values if not the same reference
@@ -28,21 +29,12 @@ function createSelOption(parent: HTMLSelectElement, colName: string) {
     el.value = el.textContent = colName;
     parent.appendChild(el)
 }
-function setupHeader(data: string[][]) {
-    renderer.clearPoints()
-    parser.parseData(data)
 
-    const cols: string[] = data[0]
-
-    renderer.initDrawData(data.length)
-
-    {// filter code
-
-        const toggleBtn = document.getElementById('toggle-filters') as HTMLButtonElement;
-        const dropdown = document.getElementById('filter-dropdown') as HTMLDivElement;
-        const addFilterBtn = document.getElementById('add-filter-row') as HTMLButtonElement;
-        const filterList = document.getElementById('filter-list') as HTMLDivElement;
-
+function initDropdowns() {
+    // const dropdown = document.getElementById('filter-dropdown') as HTMLDivElement;
+    document.querySelectorAll(".dropdown-container").forEach((container) => {
+        const dropdown = container.querySelector(".dropdown") as HTMLDivElement
+        const toggleBtn = container.querySelector('.main-btn') as HTMLButtonElement;
         // Toggle Dropdown Visibility
         toggleBtn.addEventListener('click', () => {
             dropdown.classList.toggle('hidden');
@@ -55,6 +47,22 @@ function setupHeader(data: string[][]) {
                 dropdown.classList.add('hidden');
             }
         });
+    })
+}
+
+function setupHeader(data: string[][]) {
+    renderer.clearPoints()
+    parser.parseData(data)
+
+    const cols: string[] = data[0]
+
+    renderer.initDrawData(data.length)
+
+    {// filter code
+
+        const addFilterBtn = document.getElementById('add-filter-row') as HTMLButtonElement;
+        const filterList = document.getElementById('filter-list') as HTMLDivElement;
+        initDropdowns()
 
         function applyFilters() {
             // Get the column names and values
@@ -167,22 +175,27 @@ function setupHeader(data: string[][]) {
 
         const colorSelect = document.getElementById('color-select') as HTMLSelectElement
         colorSelect.addEventListener('change', () => {
-            // console.log("Changed")
+            const legend = document.querySelector('.legend') as HTMLDivElement;
             const colName = colorSelect.value
             if (colName === '' || !parser.parsedData.has(colName)) {
                 // reset colors
                 renderer.setAllPointColors(1, 1, 0)
+                legend.classList.add('hidden')
                 return
             }
             //Should not matter if column is a number column or not, use strColMap
 
             // Get max
             let max = -Infinity;
+            let min = Infinity;
             const columnList = parser.parsedData.get(colName) as Float32Array
             for (let i = 0; i < columnList.length; i++) {
                 const cellValNum = columnList[i]
                 if (max < cellValNum) {
                     max = cellValNum;
+                }
+                if (min > cellValNum) {
+                    min = cellValNum;
                 }
             }
 
@@ -198,6 +211,34 @@ function setupHeader(data: string[][]) {
 
             renderer.colorMapRows(rowMask, colorMap)
             toast.newMessage(`Coloring based off ${colName}`)
+
+            //Update legend
+            legend.classList.remove('hidden');
+
+            let numSteps = parser.uniques.get(colName)!;
+
+            legend.innerHTML = `<div class="legend-title">${colName}</div>`;
+
+            const isStringCol = parser.colTypes.get(colName) === 'string';
+
+            for (let i = 0; i < numSteps; i++) {
+                const alpha = i / (numSteps - 1);
+                const value = (min + alpha * (max - min)).toFixed(2);  // Map back to real value
+                const color = colorMap.getColor(alpha);
+                const hex = `#${color.getHexString()}`;
+
+                const label = isStringCol
+                    ? parser.invertedStrMap.get(colName)?.get(i) ?? String(i)
+                    : (min + alpha * (max - min)).toFixed(2);
+
+                legend.innerHTML += `
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: ${hex};"></div>
+                    <span class="legend-label">${label}</span>
+                </div>
+                `;
+            }
+
         })
 
         const selectElX = document.getElementById('select-xaxis') as HTMLSelectElement

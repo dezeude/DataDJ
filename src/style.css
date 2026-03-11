@@ -89,7 +89,7 @@ body {
   bottom: -100px;
 }
 
-.filter-container {
+.dropdown-container {
 
   position: relative;
   /* Anchor point for the dropdown */
@@ -138,4 +138,63 @@ body {
   border: none;
   border-radius: 3px;
   cursor: pointer;
+}
+
+
+.legend.hidden {
+  display: none;
+}
+
+.legend {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  font-size: small;
+  width: 10%;
+  max-width: 200px;
+  height: 10%;
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1ch;
+  padding: 1ch;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.legend-title {
+  font-weight: bold;
+  font-size: small;
+  color: black;
+}
+
+.legend::-webkit-scrollbar-thumb {
+  border-radius: 100px;
+  background: #8070d4;
+  border: 6px solid rgba(0, 0, 0, 0.2);
+}
+
+.legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The color swatch (circle for scatterplot) */
+.legend .legend-color {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend .legend-label {
+  font-size: 13px;
+  color: #555;
 }

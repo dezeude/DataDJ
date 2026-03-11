@@ -9,6 +9,9 @@ const strColMap: Map<string, Map<string | number, number>> = new Map()
 //column name => row value in column => unique number for value in column
 // kind of like an id for each value in the column, TODO: Don't use this for number columns. 
 //Maybe keep track of all the strings each column can have, could prove useful?
+const invertedStrMap: Map<string, Map<number, string>> = new Map();
+// col name => index of row => string row value
+//only for string columns
 const uniques: Map<string, number> = new Map();
 // Col name => # of unique values in col
 function parseData(data: string[][]) {
@@ -89,6 +92,16 @@ function parseData(data: string[][]) {
         parsedData.set(colName, list);
     }
     console.log(parsedData, colTypes, strColMap)
+    // Inverted strings
+    strColMap.forEach((map, colName) => {
+        const invMap: Map<number, string> = new Map()
+        if (colTypes.get(colName) === 'string') {
+            map.forEach((index, label) => {
+                invMap.set(index, label as string)
+            })
+        }
+        invertedStrMap.set(colName, invMap)
+    })
 }
 
 function getColIndex(colName: string): number {
@@ -99,4 +112,4 @@ function getColIndex(colName: string): number {
     return -1;
 }
 
-export { parsedData, colTypes, parseData, strColMap, getColIndex, uniques }
+export { parsedData, colTypes, parseData, strColMap, getColIndex, invertedStrMap, uniques }
