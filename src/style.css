@@ -120,7 +120,8 @@ body {
   display: none;
 }
 
-.filter-row {
+.filter-row,
+.container-row {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;

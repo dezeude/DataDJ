@@ -2,15 +2,16 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { newMessage } from './toast';
 import { Lut } from 'three/addons/math/Lut.js';
+import type { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0, 0, 0)
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1_000_000_000);
+export const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1_000_000_000);
 camera.position.z = 2
 //position must be > 0 so points are visible in frustum (cube)
 const pointsGeometry = new THREE.BufferGeometry();
-const pointsMaterial = new THREE.PointsMaterial({ size: 1, vertexColors: true, transparent: true });
+export const pointsMaterial = new THREE.PointsMaterial({ size: 1, vertexColors: true, transparent: true });
 
 const decimalPlaces: number = 2;
 const cameraTopElement = document.getElementById('camera-top') as HTMLSpanElement;
@@ -113,6 +114,11 @@ function computeAndUpdateCamCoords() {
     cameraBottomElement.textContent = bottom
 }
 
+export function updateCameraBounds(x: number = 0, y: number = 0) {
+    camera.position.x += x;
+    camera.position.y += y;
+}
+
 function round(num: number): string {
     return formatter.format(num)
 }
@@ -150,18 +156,34 @@ function initDrawData(length: number) {
 
 function setXColumn(arr: ArrayLike<number>) {
     if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
+    let min = Infinity, max = -Infinity;
     for (let i = 0; i < arr.length; i++) {
+        if (arr[i] < min) min = arr[i]
+        if (arr[i] > max) max = arr[i]
         pointPositionsBuffer[i * coordsPerPoint] = arr[i]
     }
     pointsGeometry.getAttribute("position").needsUpdate = true;
+    const pointSize = pointsMaterial.size;
+    camera.left = min - 2 * pointSize;
+    camera.right = max + 2 * pointSize;
+    camera.updateProjectionMatrix()
 }
 
 function setYColumn(arr: ArrayLike<number>) {
     if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
+    let min = Infinity, max = -Infinity;
     for (let i = 0; i < arr.length; i++) {
+        if (arr[i] < min) min = arr[i]
+        if (arr[i] > max) max = arr[i]
         pointPositionsBuffer[i * coordsPerPoint + 1] = arr[i]
     }
     pointsGeometry.getAttribute("position").needsUpdate = true;
+
+    const pointSize = pointsMaterial.size;
+    camera.bottom = min - 2 * pointSize;
+    camera.top = max + 2 * pointSize;
+    camera.updateProjectionMatrix()
+
 }
 
 function setColumns(x: ArrayLike<number>, y: ArrayLike<number>) {
@@ -218,19 +240,28 @@ export function showPoints(rowMask: ArrayLike<boolean | number>) {
 }
 
 /**
+ * Color by indexing
  * Changes the color of rows that are included in the array parameters.
  * The points in the specified rows are rendered in the specified color,
  * Every other point is rendered as the background color of the canvas.
  * @param selectedRows Array of row indices that should be colored according to @param selectedColor
  * @param selectedColor Color for selected points
  */
-function colorSelectedRows(selectedRows: ArrayLike<number>, selectedColor: THREE.Color) {
-    for (let i = 0; i < selectedRows.length; i++) {
-        const idx = selectedRows[i]
-        pointColorsBuffer[idx * channelsPerColor] = selectedColor.r
-        pointColorsBuffer[idx * channelsPerColor + 1] = selectedColor.g
-        pointColorsBuffer[idx * channelsPerColor + 2] = selectedColor.b
+function colorSelectedRows(selectedRows: ArrayLike<number>, selectedColor: THREE.Color, unselectedColor: THREE.Color = scene.background as THREE.Color) {
+    const totalPoints = pointColorsBuffer.length / channelsPerColor;
+    const selectedSet = new Set(Array.from(selectedRows));
+
+    for (let i = 0; i < totalPoints; i++) {
+        const color = selectedSet.has(i) ? selectedColor : unselectedColor;
+
+        // Calculate base index once per iteration
+        const baseIndex = i * channelsPerColor;
+
+        pointColorsBuffer[baseIndex] = color.r;
+        pointColorsBuffer[baseIndex + 1] = color.g;
+        pointColorsBuffer[baseIndex + 2] = color.b;
     }
+
     pointsGeometry.getAttribute("color").needsUpdate = true;
 }
 
@@ -301,7 +332,15 @@ function drawPoints() {
     scene.add(points)
 }
 
+export function changePointSize(size: number) {
+    if (size <= 0) return;
+    pointsMaterial.size = size;
+}
+
+export function colorContinuous(low: THREE.Color, high: THREE.Color) {
+
+}
+
 // function translateCamera(distanceX: number, distanceY: number){}
-// function changePointSize(newPointSize: number){}
 
 export { animate, clearPoints, colorRows, initDrawData, setXColumn, setAllPointColors, setYColumn, renderColumns }

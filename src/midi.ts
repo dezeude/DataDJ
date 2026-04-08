@@ -16,6 +16,10 @@ function handleAccessGranted(access: MIDIAccess) {
 
         console.log(`${type}: Port ${name} is now ${state}`);
         console.log(midiAccess.inputs, midiAccess.outputs)
+
+        if (state === 'connected') {
+            midiAccess = access;
+        }
     }
 }
 

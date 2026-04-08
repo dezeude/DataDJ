@@ -3,7 +3,7 @@ import * as toast from './toast';
 import * as parser from './file';
 import * as midi from './midi'
 import { Lut } from 'three/addons/math/Lut.js';
-import { BindController } from './inputManager';
+import { BindSelectController, BindCallbackController, type MidiCallback } from './inputManager';
 import { LineGeometry } from 'three/examples/jsm/Addons.js';
 
 function arrEq<T>(a: ArrayLike<T> | null, b: ArrayLike<T> | null) {
@@ -30,6 +30,22 @@ function createSelOption(parent: HTMLSelectElement, colName: string) {
     parent.appendChild(el)
 }
 
+function rotateSelectOption(selectElement: HTMLSelectElement, clockwise: boolean) {
+    if (!selectElement || selectElement.options.length <= 1) return;
+
+    const totalOptions = selectElement.options.length;
+    const currentIndex = selectElement.selectedIndex;
+
+    // Calculate new index: if not clockwise, go backwards (+ total for positive modulus)
+    let nextIndex = clockwise ? (currentIndex + 1) : (currentIndex - 1 + totalOptions);
+
+    // Use modulo operator to loop around
+    selectElement.selectedIndex = nextIndex % totalOptions;
+
+    // Optional: Trigger change event so other code knows it changed
+    selectElement.dispatchEvent(new Event('change'));
+}
+
 function initDropdowns() {
     // const dropdown = document.getElementById('filter-dropdown') as HTMLDivElement;
     document.querySelectorAll(".dropdown-container").forEach((container) => {
@@ -47,6 +63,113 @@ function initDropdowns() {
                 dropdown.classList.add('hidden');
             }
         });
+    })
+}
+
+function initSettingsDropdown() {
+    const bindings: { text: string; key: string }[] = [
+        { text: 'XMIN', key: 'xmin' },
+        { text: 'XMAX', key: 'xmax' },
+        { text: 'YMIN', key: 'ymin' },
+        { text: 'YMAX', key: 'ymax' },
+        { text: 'Point Size', key: 'size' },
+        { text: 'Zoom', key: 'zoom' },
+    ];
+    const rows = document.querySelectorAll(".dropdown-container .container-row");
+    rows.forEach((row, i) => {
+        const bindBtn = row.querySelector('.bind-btn') as HTMLButtonElement;
+        const { text, key } = bindings[i];
+        bindBtn.textContent = 'Bind';
+        let callback: (event: MIDIMessageEvent) => void;
+        callback = () => {
+            toast.newMessage("Error: input not assigned")
+            throw new Error("Error: MIDI Input not assigned")
+        }
+        const speed = 1.0;
+
+        // Cast to OrthographicCamera to access left/right/top/bottom properties
+        // If parser.renderer.camera is globally accessible, use that.
+
+        switch (key) {
+            case "xmin":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    const clockwise = event.data![2] === 0x1;
+                    camera.left += clockwise ? speed : -speed;
+                    camera.updateProjectionMatrix();
+                    toast.newMessage(`${text} Changed`)
+                }
+                break;
+            case "xmax":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    const clockwise = event.data![2] === 0x1;
+                    camera.right += clockwise ? speed : -speed;
+                    camera.updateProjectionMatrix();
+                    toast.newMessage(`${text} Changed`)
+                }
+                break;
+            case "ymin":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    const clockwise = event.data![2] === 0x1;
+                    // In WebGL, standard Y grows upwards. 
+                    // ymin typically corresponds to the bottom edge.
+                    camera.bottom += clockwise ? speed : -speed;
+                    camera.updateProjectionMatrix();
+                    toast.newMessage(`${text} Changed`)
+                }
+                break;
+            case "ymax":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    const clockwise = event.data![2] === 0x1;
+                    // ymax typically corresponds to the top edge.
+                    camera.top += clockwise ? speed : -speed;
+                    camera.updateProjectionMatrix();
+                    toast.newMessage(`${text} Changed`)
+                }
+                break;
+
+            case "size":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    const clockwise = event.data![2] === 0x1;
+                    // ymax typically corresponds to the top edge.
+                    let nsize = renderer.pointsMaterial.size;
+
+                    nsize = clockwise ? nsize + 1 : nsize - 1;
+                    renderer.changePointSize(nsize)
+                    toast.newMessage(`${text} Changed`)
+                }
+                break;
+
+            case "zoom":
+                callback = (event) => {
+                    const camera = renderer.camera;
+                    if (!camera) return;
+
+                    const clockwise = event.data![2] === 0x1;
+                    const zoomSpeed = 0.1; // Adjust this if the knob is too sensitive
+
+                    // 2. Read the CURRENT zoom, not the material size
+                    let currentZoom = camera.zoom;
+
+                    // 3. Calculate new zoom (Clockwise = Zoom In, Counter-Clockwise = Zoom Out)
+                    let newZoom = clockwise ? currentZoom + zoomSpeed : currentZoom - zoomSpeed;
+
+                    // 4. CRITICAL: Never let zoom hit 0 or go negative, it will break the WebGL projection!
+                    camera.zoom = Math.max(0.1, newZoom);
+
+                    // 5. CRITICAL: Tell Three.js to apply the math
+                    camera.updateProjectionMatrix();
+
+                    toast.newMessage(`${text} Changed: ${camera.zoom.toFixed(1)}x`);
+                }
+                break;
+        }
+
+        new BindCallbackController(bindBtn, callback)
     })
 }
 
@@ -78,7 +201,6 @@ function setupHeader(data: string[][]) {
                 tuples.push([colVal, val])
             }
             console.log(tuples)
-
 
             const rowMask = new Uint8Array(data.length)
 
@@ -122,21 +244,37 @@ function setupHeader(data: string[][]) {
             row.className = 'filter-row';
 
             row.innerHTML = `
+        Col
         <select class="filter-field">
         </select>
+        <!--Dependent:
+        <select class="filter-dependents">
+        </select> -->
         <select class="filter-operator">
         </select>
         <button class="bind-btn">Bind</button>
         <button class="delete-btn">×</button>
         `;
-
+            // const dependentSel = row.querySelector('.filter-dependents') as HTMLSelectElement
             const rowSel = row.querySelector('.filter-field') as HTMLSelectElement
             const rowValSel = row.querySelector('.filter-operator') as HTMLSelectElement
-            cols.forEach((colName) => createSelOption(rowSel, colName))
+            cols.forEach((colName) => {
+                createSelOption(rowSel, colName)
+                // createSelOption(dependentSel, colName)
+            })
             const bindBtn = row.querySelector('.bind-btn') as HTMLButtonElement;
 
-            new BindController(bindBtn, rowValSel);
+            new BindSelectController(bindBtn, rowValSel);
 
+            // dependentSel.addEventListener('change', () => {
+            //     const dependentName = dependentSel.value
+            //     const colName = rowSel.value
+            //     if (colName === '' || dependentName === '') {
+            //         toast.newMessage("Dependent or Col Filter cannot be null")
+            //         return;
+            //     }
+            //     parser.dependents.set(colName, dependentName)
+            // })
 
             // Handle Bind logic
             rowSel.addEventListener('change', () => {
@@ -173,7 +311,18 @@ function setupHeader(data: string[][]) {
 
         addFilterBtn.addEventListener('click', createFilterRow);
 
+        // Color Select
+        const colorCycleBtn = document.getElementById('color-cycle') as HTMLButtonElement;
         const colorSelect = document.getElementById('color-select') as HTMLSelectElement
+
+        const cycleCallback: MidiCallback = (event) => {
+            const clockwise = event.data![2] === 0x1;
+            rotateSelectOption(colorSelect, clockwise);
+            toast.newMessage(`Coloring Changed to ${colorSelect.value}`)
+        }
+
+        new BindCallbackController(colorCycleBtn, cycleCallback);
+
         colorSelect.addEventListener('change', () => {
             const legend = document.querySelector('.legend') as HTMLDivElement;
             const colName = colorSelect.value
@@ -183,8 +332,12 @@ function setupHeader(data: string[][]) {
                 legend.classList.add('hidden')
                 return
             }
-            //Should not matter if column is a number column or not, use strColMap
+            //If a discrete column put labels, if a continuous column, display colorbar
+            if (parser.colTypes.get(colName) === 'continuous') {
 
+                return
+            }
+            // Discrete
             // Get max
             let max = -Infinity;
             let min = Infinity;
@@ -219,7 +372,7 @@ function setupHeader(data: string[][]) {
 
             legend.innerHTML = `<div class="legend-title">${colName}</div>`;
 
-            const isStringCol = parser.colTypes.get(colName) === 'string';
+            const isStringCol = parser.colTypes.get(colName) === 'discrete';
 
             for (let i = 0; i < numSteps; i++) {
                 const alpha = i / (numSteps - 1);
@@ -240,7 +393,8 @@ function setupHeader(data: string[][]) {
             }
 
         })
-
+        // Axes
+        const xAxisCycleBtn = document.getElementById('x-cycle') as HTMLButtonElement;
         const selectElX = document.getElementById('select-xaxis') as HTMLSelectElement
         selectElX.addEventListener('change', () => {
             const colName = selectElX.value
@@ -248,12 +402,29 @@ function setupHeader(data: string[][]) {
             renderer.setXColumn(colArr)
         })
 
+        const xCycleCallback: MidiCallback = (event) => {
+            const clockwise = event.data![2] === 0x1;
+            rotateSelectOption(selectElX, clockwise);
+            toast.newMessage(`X-Axis Changed to ${selectElX.value}`)
+        }
+
+        new BindCallbackController(xAxisCycleBtn, xCycleCallback);
+
+        const yAxisCycleBtn = document.getElementById('y-cycle') as HTMLButtonElement;
         const selectElY = document.getElementById('select-yaxis') as HTMLSelectElement
         selectElY.addEventListener('change', () => {
             const colName = selectElY.value
             const colArr = parser.parsedData.get(colName) as Float32Array
             renderer.setYColumn(colArr)
         })
+
+        const yCycleCallback: MidiCallback = (event) => {
+            const clockwise = event.data![2] === 0x1;
+            rotateSelectOption(selectElY, clockwise);
+            toast.newMessage(`-Axis Changed to ${selectElY.value}`)
+        }
+
+        new BindCallbackController(yAxisCycleBtn, yCycleCallback);
 
 
         cols.forEach((colName: string) => {
@@ -265,6 +436,8 @@ function setupHeader(data: string[][]) {
         renderer.renderColumns()
         renderer.setAllPointColors(1, 1, 0)
     }
+
+    initSettingsDropdown()
 
 
 }

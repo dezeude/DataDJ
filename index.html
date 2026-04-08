@@ -21,9 +21,30 @@
         <input type="file" accept=".csv" id="input-file">
         <div class="dropdown-container">
           <button class="main-btn">Dimensions</button>
-
           <div class="dropdown hidden">
-            <div class="list">
+            <div class="container-row">
+              <div class="text">XMIN</div>
+              <button class="bind-btn">Bind</button>
+            </div>
+            <div class="container-row">
+              <div class="text">XMAX</div>
+              <button class="bind-btn">Bind</button>
+            </div>
+            <div class="container-row">
+              <div class="text">YMIN</div>
+              <button class="bind-btn">Bind</button>
+            </div>
+            <div class="container-row">
+              <div class="text">YMAX</div>
+              <button class="bind-btn">Bind</button>
+            </div>
+            <div class="container-row">
+              <div class="text">Point Size</div>
+              <button class="bind-btn">Bind</button>
+            </div>
+            <div class="container-row">
+              <div class="text">Zoom</div>
+              <button class="bind-btn">Bind</button>
             </div>
           </div>
         </div>
@@ -44,18 +65,19 @@
         <!-- TODO: Show grid lines using textbox setting option -->
         <div class="axis-assign">
           <div class="axis">
+            <button id="color-cycle" class="cycle">🔄</button>
             Color: <select id="color-select">
               <option value="">Column</option>
             </select>
           </div>
           <div class="axis">
-
+            <button id="x-cycle" class="cycle">🔄</button>
             X-axis: <select id="select-xaxis">
               <option value="">Column</option>
             </select>
           </div>
           <div class="axis">
-
+            <button id="y-cycle" class="cycle">🔄</button>
             Y-axis: <select id="select-yaxis">
               <option value="">Column</option>
             </select>
