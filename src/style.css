@@ -169,6 +169,19 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.legend.continuous {
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.legend.continuous>.legend-content {
+  flex-direction: row;
+  height: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
 .legend-title {
   font-weight: bold;
   font-size: small;

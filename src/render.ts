@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { newMessage } from './toast';
 import { Lut } from 'three/addons/math/Lut.js';
 import type { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
+import * as d3 from 'd3';
 
 
 const scene = new THREE.Scene();
@@ -265,7 +266,7 @@ function colorSelectedRows(selectedRows: ArrayLike<number>, selectedColor: THREE
     pointsGeometry.getAttribute("color").needsUpdate = true;
 }
 
-export function colorMapRows(colorValues: ArrayLike<number>, colorMap: Lut) {
+export function colorMapRowsDiscrete(colorValues: ArrayLike<number>, colorMap: Lut) {
     // if (colorValues.length * channelsPerColor !== pointColorsBuffer.length)
     //     throw new Error(`Row mask should have the same number of rows as data. (${colorValues.length * 3} * 3 != ${pointColorsBuffer.length})`)
     for (let i = 0; i < colorValues.length; i++) {
@@ -274,6 +275,23 @@ export function colorMapRows(colorValues: ArrayLike<number>, colorMap: Lut) {
         pointColorsBuffer[i * channelsPerColor + 1] = color.g
         pointColorsBuffer[i * channelsPerColor + 2] = color.b
     }
+    pointsGeometry.getAttribute("color").needsUpdate = true;
+}
+
+export function colorMapRowsContinuous(rowData: ArrayLike<number>, colorScale: d3.ScaleSequential<any>) {
+
+    for (let i = 0; i < rowData.length; i++) {
+        // Map the raw value from the domain to a color string
+        const colorString = colorScale(rowData[i]);
+        const color = d3.rgb(colorString);
+
+        pointColorsBuffer[i * channelsPerColor] = color.r / 255; // R
+        pointColorsBuffer[i * channelsPerColor + 1] = color.g / 255; // G
+        pointColorsBuffer[i * channelsPerColor + 2] = color.b / 255; //B
+        // pointColorsBuffer[i * channelsPerColor + 3] = 1; //opacity
+    }
+
+    // 5. Signal the GPU to upload the new data
     pointsGeometry.getAttribute("color").needsUpdate = true;
 }
 
@@ -337,9 +355,7 @@ export function changePointSize(size: number) {
     pointsMaterial.size = size;
 }
 
-export function colorContinuous(low: THREE.Color, high: THREE.Color) {
 
-}
 
 // function translateCamera(distanceX: number, distanceY: number){}
 

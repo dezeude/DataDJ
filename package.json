@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/papaparse": "^5.5.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.4"
   },
   "dependencies": {
     "@types/three": "^0.182.0",
+    "d3": "^7.9.0",
     "papaparse": "^5.5.3",
     "three": "^0.182.0"
   }

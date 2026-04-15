@@ -1,10 +1,74 @@
 import * as renderer from './render';
 import * as toast from './toast';
 import * as parser from './file';
-import * as midi from './midi'
 import { Lut } from 'three/addons/math/Lut.js';
 import { BindSelectController, BindCallbackController, type MidiCallback } from './inputManager';
-import { LineGeometry } from 'three/examples/jsm/Addons.js';
+import * as d3 from 'd3';
+
+const maxColorsOnScreen = 10;
+// "a human can typically distinguish between 6 to 10 distinct colors" -Internet/Gemini
+function createColorMap(data: Float32Array, selector: string): (v: number) => string {
+    const min = d3.min(data) ?? 0;
+    const max = d3.max(data) ?? 1;
+
+    document.querySelector(selector)!.classList.remove('hidden')
+
+    // 1. Create the Sequential Scale
+    // Using interpolateTurbo to match the high-contrast rainbow in your image
+    const colorScale = d3.scaleSequential<string>()
+        .domain([min, max])
+        .interpolator(d3.interpolateTurbo)
+        .clamp(true);
+
+    // 2. Setup Dimensions for Legend
+    const width = 100;
+    const height = 300;
+    const margin = { top: 20, right: 50, bottom: 20, left: 10 };
+
+    const svg = d3.select(selector)
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // 3. Define the Gradient
+    const defs = svg.append("defs");
+    const linearGradient = defs.append("linearGradient")
+        .attr("id", "legend-gradient")
+        .attr("x1", "0%").attr("y1", "100%") // Bottom (min)
+        .attr("x2", "0%").attr("y2", "0%");   // Top (max)
+
+    // Add color stops (every 10% for a smooth transition)
+    const stops = 10;
+    d3.range(stops).forEach(i => {
+        const offset = i / (stops - 1);
+        linearGradient.append("stop")
+            .attr("offset", `${offset * 100}%`)
+            .attr("stop-color", colorScale(min + (max - min) * offset));
+    });
+
+    // 4. Draw the Legend Rectangle
+    svg.append("rect")
+        .attr("width", 20)
+        .attr("height", height)
+        .style("fill", "url(#legend-gradient)");
+
+    // 5. Add the Axis
+    const axisScale = d3.scaleLinear()
+        .domain([min, max])
+        .range([height, 0]);
+
+    const axis = d3.axisRight(axisScale)
+        .ticks(5)
+        .tickFormat(d3.format(".2f"));
+
+    svg.append("g")
+        .attr("transform", `translate(20, 0)`)
+        .call(axis);
+
+    return colorScale;
+}
 
 function arrEq<T>(a: ArrayLike<T> | null, b: ArrayLike<T> | null) {
     // Check for null or undefined values if not the same reference
@@ -325,6 +389,8 @@ function setupHeader(data: string[][]) {
 
         colorSelect.addEventListener('change', () => {
             const legend = document.querySelector('.legend') as HTMLDivElement;
+            const legendTitle = legend.querySelector('.legend-title') as HTMLDivElement
+            const legendContent = legend.querySelector('.legend-content') as HTMLDivElement
             const colName = colorSelect.value
             if (colName === '' || !parser.parsedData.has(colName)) {
                 // reset colors
@@ -332,47 +398,67 @@ function setupHeader(data: string[][]) {
                 legend.classList.add('hidden')
                 return
             }
-            //If a discrete column put labels, if a continuous column, display colorbar
-            if (parser.colTypes.get(colName) === 'continuous') {
-
-                return
-            }
-            // Discrete
-            // Get max
-            let max = -Infinity;
-            let min = Infinity;
+            toast.newMessage(`Coloring based off ${colName}`)
+            legendTitle.innerHTML = colName;
             const columnList = parser.parsedData.get(colName) as Float32Array
-            for (let i = 0; i < columnList.length; i++) {
-                const cellValNum = columnList[i]
-                if (max < cellValNum) {
-                    max = cellValNum;
-                }
-                if (min > cellValNum) {
-                    min = cellValNum;
-                }
-            }
 
-            const rowMask = new Float16Array(columnList.length)
+            const [min, max] = d3.extent(columnList) as [number, number];
+            const rangeDiff = (max - min) || 1; // Prevent division by zero
+
+            const uniqueCount = parser.uniques.get(colName) as number
+
+            const rowMask = new Float32Array(columnList.length)
+
+            if (uniqueCount > maxColorsOnScreen) { //color continuously
+                console.log(uniqueCount)
+                // const legend = document.querySelector('.legend') as HTMLDivElement;
+                legend.classList.remove('hidden')
+                legend.classList.add('continuous')
+                // createColorMap(columnList, selector);
+                const range = d3.schemePastel2.slice(0, 2)
+                const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([min, max]);
+                const getColorMap = () => {
+                    // The HTML preview for your UI
+                    const previewHtml = d3.ticks(min, max, 14)
+                        .map(t => colorScale(t))
+                        .map(color => `
+                        <span style="
+                            background: ${color}; 
+                            height: 100%; 
+                            flex: 1; 
+                            display: inline-block;
+                        ">&nbsp;</span>
+                        `).join('');
+
+                    return {
+                        scale: colorScale,
+                        preview: previewHtml
+                    };
+                };
+
+                legendContent.innerHTML = getColorMap().preview;
+
+                renderer.colorMapRowsContinuous(columnList, colorScale);
+                return;
+            } //end continuous
+            legend.classList.remove('continuous')
+
             for (let i = 0; i < columnList.length; i++) {
-                const cellValNum = columnList[i]
-                const alpha = cellValNum / max
-                rowMask[i] = alpha
+                rowMask[i] = (columnList[i] - min) / (max - min)
             }
 
             // TODO: Allow user to choose colormap argument for Lut (currently rainbow)
             const colorMap = new Lut("rainbow", parser.uniques.get(colName))
 
-            renderer.colorMapRows(rowMask, colorMap)
-            toast.newMessage(`Coloring based off ${colName}`)
+            renderer.colorMapRowsDiscrete(rowMask, colorMap)
 
             //Update legend
             legend.classList.remove('hidden');
 
             let numSteps = parser.uniques.get(colName)!;
 
-            legend.innerHTML = `<div class="legend-title">${colName}</div>`;
-
-            const isStringCol = parser.colTypes.get(colName) === 'discrete';
+            const isDiscreteCol = parser.colTypes.get(colName) === 'string';
+            legendContent.innerHTML = ''
 
             for (let i = 0; i < numSteps; i++) {
                 const alpha = i / (numSteps - 1);
@@ -380,24 +466,28 @@ function setupHeader(data: string[][]) {
                 const color = colorMap.getColor(alpha);
                 const hex = `#${color.getHexString()}`;
 
-                const label = isStringCol
+                const label = isDiscreteCol
                     ? parser.invertedStrMap.get(colName)?.get(i) ?? String(i)
                     : (min + alpha * (max - min)).toFixed(2);
 
-                legend.innerHTML += `
+                legendContent.innerHTML += `
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: ${hex};"></div>
                     <span class="legend-label">${label}</span>
                 </div>
                 `;
             }
-
         })
         // Axes
         const xAxisCycleBtn = document.getElementById('x-cycle') as HTMLButtonElement;
         const selectElX = document.getElementById('select-xaxis') as HTMLSelectElement
         selectElX.addEventListener('change', () => {
             const colName = selectElX.value
+            if (colName === '' || !parser.parsedData.has(colName)) {
+                // reset colors
+                renderer.setAllPointColors(1, 1, 0)
+                return
+            }
             const colArr = parser.parsedData.get(colName) as Float32Array
             renderer.setXColumn(colArr)
         })
@@ -414,6 +504,11 @@ function setupHeader(data: string[][]) {
         const selectElY = document.getElementById('select-yaxis') as HTMLSelectElement
         selectElY.addEventListener('change', () => {
             const colName = selectElY.value
+            if (colName === '' || !parser.parsedData.has(colName)) {
+                // reset colors
+                renderer.setAllPointColors(1, 1, 0)
+                return
+            }
             const colArr = parser.parsedData.get(colName) as Float32Array
             renderer.setYColumn(colArr)
         })

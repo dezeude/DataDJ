@@ -3,8 +3,8 @@ export const parsedData: Map<string, Float32Array> = new Map()
 // Col order
 // Each key (column name) points to a list 
 // containing the column data.
-type colType = "discrete" | "continuous"
-export const colTypes: Map<string, colType> = new Map()
+type colType = "string" | "number"
+export const colTypes: Map<string, colType> = new Map() //used for giving string cols a numerical value when plotting
 // column name => type of rows (number or string)
 export const strColMap: Map<string, Map<string | number, number>> = new Map()
 //column name => row value in column => unique number for value in column
@@ -33,7 +33,7 @@ export function parseData(data: string[][]) {
 
         // Check if the value can be converted to a string.
         let row = 1;
-        let firstVal = data[row][i]
+        let firstVal = data[row][i] //first non blank value
         while (firstVal === "" && row < data.length - 1) {
             row++
             firstVal = data[row][i]
@@ -41,7 +41,7 @@ export function parseData(data: string[][]) {
         // For this to work each column must have all numbers or all strings
         const num = parseFloat(firstVal) //NaN if failed
         if (!isNaN(num)) { //column is a number column
-            colTypes.set(colName, "continuous")
+            colTypes.set(colName, "number")
             const strColValues: Set<number> = new Set()
             for (let j = 1; j < data.length; j++) {
                 const rowNum = parseFloat(data[j][i]);
@@ -61,7 +61,7 @@ export function parseData(data: string[][]) {
             strColMap.set(colName, colMap)
         }
         else {
-            colTypes.set(colName, "discrete")
+            colTypes.set(colName, "string")
             const strColValues: Set<string> = new Set()
             for (let j = 1; j < data.length; j++) {
                 const strVal = data[j][i];
@@ -103,7 +103,7 @@ export function parseData(data: string[][]) {
     // Inverted strings
     strColMap.forEach((map, colName) => {
         const invMap: Map<number, string> = new Map()
-        if (colTypes.get(colName) === "discrete") {
+        if (colTypes.get(colName) === "string") {
             map.forEach((index, label) => {
                 invMap.set(index, label as string)
             })
