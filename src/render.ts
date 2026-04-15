@@ -8,7 +8,10 @@ import * as d3 from 'd3';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0, 0, 0)
-export const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1_000_000_000);
+const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1_000_000_000);
+const perspCamera = new THREE.PerspectiveCamera();
+let controls: OrbitControls;
+export let camera: THREE.OrthographicCamera | THREE.PerspectiveCamera = orthoCamera;
 camera.position.z = 2
 //position must be > 0 so points are visible in frustum (cube)
 const pointsGeometry = new THREE.BufferGeometry();
@@ -58,8 +61,7 @@ function animate(canvas: HTMLCanvasElement) {
     // canvas.addEventListener('click', onMouseClick)
     const renderer = new THREE.WebGLRenderer({ canvas: canvas });
     renderer.setSize(window.innerWidth, window.innerHeight);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     // Disable all 3D interaction
     controls.enableRotate = false;
     controls.enableZoom = true;
@@ -104,15 +106,30 @@ function getXYFromMouse() {
 }
 
 function computeAndUpdateCamCoords() {
-    const left = round(camera.position.x + camera.left / camera.zoom)
-    const right = round(camera.position.x + camera.right / camera.zoom)
-    const top = round(camera.position.y + camera.top / camera.zoom)
-    const bottom = round(camera.position.y + camera.bottom / camera.zoom)
+    let left: string, right: string, top: string, bottom: string;
 
-    cameraTopElement.textContent = top
-    cameraLeftElement.textContent = left
-    cameraRightElement.textContent = right
-    cameraBottomElement.textContent = bottom
+    if (camera instanceof THREE.OrthographicCamera) {
+        left = round(camera.position.x + camera.left / camera.zoom);
+        right = round(camera.position.x + camera.right / camera.zoom);
+        top = round(camera.position.y + camera.top / camera.zoom);
+        bottom = round(camera.position.y + camera.bottom / camera.zoom);
+    } else {
+        // For perspective, compute visible world extents at Z=0 from camera position
+        const dist = Math.abs(camera.position.z);
+        const vFovRad = (camera.fov * Math.PI) / 180;
+        const halfH = Math.tan(vFovRad / 2) * dist;
+        const halfW = halfH * camera.aspect;
+
+        left = round(camera.position.x - halfW);
+        right = round(camera.position.x + halfW);
+        top = round(camera.position.y + halfH);
+        bottom = round(camera.position.y - halfH);
+    }
+
+    cameraTopElement.textContent = top;
+    cameraLeftElement.textContent = left;
+    cameraRightElement.textContent = right;
+    cameraBottomElement.textContent = bottom;
 }
 
 export function updateCameraBounds(x: number = 0, y: number = 0) {
@@ -155,36 +172,65 @@ function initDrawData(length: number) {
     pointColorsBuffer = new Float32Array(length * channelsPerColor); // x, y, z for each point
 }
 
-function setXColumn(arr: ArrayLike<number>) {
-    if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
+export function setXColumn(arr: ArrayLike<number>) {
+    if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer");
     let min = Infinity, max = -Infinity;
     for (let i = 0; i < arr.length; i++) {
-        if (arr[i] < min) min = arr[i]
-        if (arr[i] > max) max = arr[i]
-        pointPositionsBuffer[i * coordsPerPoint] = arr[i]
+        if (arr[i] < min) min = arr[i];
+        if (arr[i] > max) max = arr[i];
+        pointPositionsBuffer[i * coordsPerPoint] = arr[i];
     }
     pointsGeometry.getAttribute("position").needsUpdate = true;
-    const pointSize = pointsMaterial.size;
-    camera.left = min - 2 * pointSize;
-    camera.right = max + 2 * pointSize;
-    camera.updateProjectionMatrix()
+
+    if (camera instanceof THREE.OrthographicCamera) {
+        const pointSize = pointsMaterial.size;
+        camera.left = min - 2 * pointSize;
+        camera.right = max + 2 * pointSize;
+        camera.updateProjectionMatrix();
+    }
+    // Perspective: Z will be set in setZColumn to frame all axes together
 }
 
-function setYColumn(arr: ArrayLike<number>) {
-    if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
+export function setYColumn(arr: ArrayLike<number>) {
+    if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer");
     let min = Infinity, max = -Infinity;
     for (let i = 0; i < arr.length; i++) {
-        if (arr[i] < min) min = arr[i]
-        if (arr[i] > max) max = arr[i]
-        pointPositionsBuffer[i * coordsPerPoint + 1] = arr[i]
+        if (arr[i] < min) min = arr[i];
+        if (arr[i] > max) max = arr[i];
+        pointPositionsBuffer[i * coordsPerPoint + 1] = arr[i];
     }
     pointsGeometry.getAttribute("position").needsUpdate = true;
 
-    const pointSize = pointsMaterial.size;
-    camera.bottom = min - 2 * pointSize;
-    camera.top = max + 2 * pointSize;
-    camera.updateProjectionMatrix()
+    if (camera instanceof THREE.OrthographicCamera) {
+        const pointSize = pointsMaterial.size;
+        camera.bottom = min - 2 * pointSize;
+        camera.top = max + 2 * pointSize;
+        camera.updateProjectionMatrix();
+    }
+}
 
+export function setZColumn(arr: ArrayLike<number>) {
+    if (arr.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer");
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] < min) min = arr[i];
+        if (arr[i] > max) max = arr[i];
+        pointPositionsBuffer[i * coordsPerPoint + 2] = arr[i];
+    }
+    pointsGeometry.getAttribute("position").needsUpdate = true;
+
+    // if (camera instanceof THREE.PerspectiveCamera) {
+    //     // Recompute bounding sphere from the full position buffer to frame correctly
+    //     pointsGeometry.computeBoundingSphere();
+    //     const sphere = pointsGeometry.boundingSphere!;
+    //     const vFovRad = (camera.fov * Math.PI) / 180;
+    //     // Pull back far enough that the sphere fits in the vertical FOV with 20% padding
+    //     const dist = (sphere.radius / Math.tan(vFovRad / 2)) * 1.2;
+    //     camera.position.set(sphere.center.x, sphere.center.y, sphere.center.z + dist);
+    //     camera.near = dist * 0.01;
+    //     camera.far = dist * 10;
+    //     camera.updateProjectionMatrix();
+    // }
 }
 
 function setColumns(x: ArrayLike<number>, y: ArrayLike<number>) {
@@ -355,8 +401,38 @@ export function changePointSize(size: number) {
     pointsMaterial.size = size;
 }
 
+export function changeDimension(dim: string) {
+    if (dim === '2D') {
+        camera = orthoCamera;
+        controls.object = orthoCamera;
+        controls.enableRotate = false;
+    } else if (dim === '3D') {
+        camera = perspCamera;
+        controls.object = perspCamera;
+        controls.enableRotate = true;
+    }
+    controls.update();
+}
+// Move camera adjacent to xy plane
+export function moveCameraLeft(delta: number, controls?: OrbitControls) {
+    camera.position.x -= delta;
+    controls?.target.set(camera.position.x, controls.target.y, controls.target.z);
+}
+export function moveCameraRight(delta: number, controls?: OrbitControls) {
+    camera.position.x += delta;
+    controls?.target.set(camera.position.x, controls.target.y, controls.target.z);
+}
+export function moveCameraUp(delta: number, controls?: OrbitControls) {
+    camera.position.y += delta;
+    controls?.target.set(camera.position.x, controls.target.y, controls.target.z);
+}
+export function moveCameraDown(delta: number, controls?: OrbitControls) {
+    camera.position.y -= delta;
+    controls?.target.set(camera.position.x, controls.target.y, controls.target.z);
+}
+
 
 
 // function translateCamera(distanceX: number, distanceY: number){}
 
-export { animate, clearPoints, colorRows, initDrawData, setXColumn, setAllPointColors, setYColumn, renderColumns }
+export { animate, clearPoints, colorRows, initDrawData, setAllPointColors, renderColumns }

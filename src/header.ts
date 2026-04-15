@@ -159,7 +159,7 @@ function initSettingsDropdown() {
                 callback = (event) => {
                     const camera = renderer.camera;
                     const clockwise = event.data![2] === 0x1;
-                    camera.left += clockwise ? speed : -speed;
+                    renderer.moveCameraLeft(clockwise ? speed : -speed)
                     camera.updateProjectionMatrix();
                     toast.newMessage(`${text} Changed`)
                 }
@@ -168,7 +168,7 @@ function initSettingsDropdown() {
                 callback = (event) => {
                     const camera = renderer.camera;
                     const clockwise = event.data![2] === 0x1;
-                    camera.right += clockwise ? speed : -speed;
+                    renderer.moveCameraRight(clockwise ? speed : -speed);
                     camera.updateProjectionMatrix();
                     toast.newMessage(`${text} Changed`)
                 }
@@ -179,7 +179,7 @@ function initSettingsDropdown() {
                     const clockwise = event.data![2] === 0x1;
                     // In WebGL, standard Y grows upwards. 
                     // ymin typically corresponds to the bottom edge.
-                    camera.bottom += clockwise ? speed : -speed;
+                    renderer.moveCameraDown(clockwise ? speed : -speed);
                     camera.updateProjectionMatrix();
                     toast.newMessage(`${text} Changed`)
                 }
@@ -189,7 +189,7 @@ function initSettingsDropdown() {
                     const camera = renderer.camera;
                     const clockwise = event.data![2] === 0x1;
                     // ymax typically corresponds to the top edge.
-                    camera.top += clockwise ? speed : -speed;
+                    renderer.moveCameraUp(clockwise ? speed : -speed);
                     camera.updateProjectionMatrix();
                     toast.newMessage(`${text} Changed`)
                 }
@@ -403,7 +403,6 @@ function setupHeader(data: string[][]) {
             const columnList = parser.parsedData.get(colName) as Float32Array
 
             const [min, max] = d3.extent(columnList) as [number, number];
-            const rangeDiff = (max - min) || 1; // Prevent division by zero
 
             const uniqueCount = parser.uniques.get(colName) as number
 
@@ -415,7 +414,6 @@ function setupHeader(data: string[][]) {
                 legend.classList.remove('hidden')
                 legend.classList.add('continuous')
                 // createColorMap(columnList, selector);
-                const range = d3.schemePastel2.slice(0, 2)
                 const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([min, max]);
                 const getColorMap = () => {
                     // The HTML preview for your UI
@@ -478,6 +476,7 @@ function setupHeader(data: string[][]) {
                 `;
             }
         })
+
         // Axes
         const xAxisCycleBtn = document.getElementById('x-cycle') as HTMLButtonElement;
         const selectElX = document.getElementById('select-xaxis') as HTMLSelectElement
@@ -516,16 +515,53 @@ function setupHeader(data: string[][]) {
         const yCycleCallback: MidiCallback = (event) => {
             const clockwise = event.data![2] === 0x1;
             rotateSelectOption(selectElY, clockwise);
-            toast.newMessage(`-Axis Changed to ${selectElY.value}`)
+            toast.newMessage(`Y-Axis Changed to ${selectElY.value}`)
         }
 
         new BindCallbackController(yAxisCycleBtn, yCycleCallback);
+        // Z axis
+        const zAxisCycleBtn = document.getElementById('z-cycle') as HTMLButtonElement;
+        const selectElZ = document.getElementById('select-zaxis') as HTMLSelectElement
+        selectElZ.addEventListener('change', () => {
+            const colName = selectElZ.value
+            if (colName === '' || !parser.parsedData.has(colName)) {
+                // reset colors
+                renderer.setAllPointColors(1, 1, 0)
+                return
+            }
+            const colArr = parser.parsedData.get(colName) as Float32Array
+            renderer.setZColumn(colArr)
+        })
+
+        const zCycleCallback: MidiCallback = (event) => {
+            const clockwise = event.data![2] === 0x1;
+            rotateSelectOption(selectElZ, clockwise);
+            toast.newMessage(`Z-Axis Changed to ${selectElZ.value}`)
+        }
+
+        new BindCallbackController(zAxisCycleBtn, zCycleCallback);
+
+        //Dimension switch
+        const dimensionSelect = document.getElementById('dimension-switch') as HTMLSelectElement;
+        dimensionSelect.addEventListener('change', () => {
+            const newDim = dimensionSelect.value
+            const zCon = document.getElementById('z-axis-container') as HTMLDivElement
+            if (newDim === '3D') {
+                zCon.classList.remove('hidden')
+            }
+            else if (newDim === '2D') {
+                zCon.classList.add('hidden')
+            }
+            else return;
+            renderer.changeDimension(newDim)
+        })
 
 
         cols.forEach((colName: string) => {
+            createSelOption(colorSelect, colName)
             createSelOption(selectElX, colName)
             createSelOption(selectElY, colName)
-            createSelOption(colorSelect, colName)
+            createSelOption(selectElZ, colName)
         })
 
         renderer.renderColumns()

@@ -19,6 +19,14 @@
     <div class="header">
       <div class="header-left">
         <input type="file" accept=".csv" id="input-file">
+        <div class="dimension-container">
+          Dimension
+          <select id="dimension-switch">
+            <option value="2D">2D</option>
+            <option value="3D">3D</option>
+          </select>
+        </div>
+
         <div class="dropdown-container">
           <button class="main-btn">Dimensions</button>
           <div class="dropdown hidden">
@@ -79,6 +87,12 @@
           <div class="axis">
             <button id="y-cycle" class="cycle">🔄</button>
             Y-axis: <select id="select-yaxis">
+              <option value="">Column</option>
+            </select>
+          </div>
+          <div class="axis hidden" id="z-axis-container">
+            <button id="z-cycle" class="cycle">🔄</button>
+            Z-axis: <select id="select-zaxis">
               <option value="">Column</option>
             </select>
           </div>
