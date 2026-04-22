@@ -1,7 +1,7 @@
 let midiAccess: MIDIAccess;
 
-export function init() {
-    getPermission()
+export async function init() {
+    await getPermission()
     navigator.requestMIDIAccess().then(handleAccessGranted, onMIDIFailure)
 }
 
@@ -23,7 +23,7 @@ function handleAccessGranted(access: MIDIAccess) {
     }
 }
 
-function getPermission() {
+async function getPermission() {
     navigator.permissions.query({ name: "midi" }).then((result) => {
         if (result.state === "granted") {
             // Access granted.

@@ -216,10 +216,10 @@ function initSettingsDropdown() {
 
             case "alpha":
                 callback = (event) => {
-                    const speed = 0.01; //Should let a knob control this
+                    const speed = 0.1; //Should let a knob control this
                     const clockwise = event.data![2] === 0x1;
                     const nAlpha = clockwise ? renderer.getPointsAlpha() + speed : renderer.getPointsAlpha() - speed;
-                    renderer.changeTransparency(nAlpha);
+                    renderer.changeTransparency(Math.max(speed, nAlpha));
                 }
                 break;
         }
@@ -233,6 +233,7 @@ function setupHeader(data: string[][]) {
     parser.parseData(data)
 
     const cols: string[] = data[0]
+    // TODO: use global data variable
 
     renderer.initDrawData(data.length)
 
