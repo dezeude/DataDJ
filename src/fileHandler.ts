@@ -1,26 +1,23 @@
 import Papa from 'papaparse'
+import { setupHeader } from './header';
 
-async function initFileInput(): Promise<File> {
-    return new Promise((resolve) => {
-        const inputFile: HTMLInputElement = document.getElementById("input-file") as HTMLInputElement;
+export async function initFileInput(inputEl: HTMLInputElement) {
+    if (!inputEl) {
+        throw new Error("Input file is not in document")
+    }
 
-        if (!inputFile) {
-            new Error("Input file is not in document")
-        }
+    if (!inputEl.files || inputEl.files.length < 1) {
+        throw new Error("File missing")
+    }
+    const file = inputEl.files[0]
 
-        inputFile.addEventListener("input", (e) => {
-            if (!inputFile.files || inputFile.files.length < 1) {
-                throw new Error("File missing")
-            }
+    if (!file.name.endsWith('.csv')) {
+        throw new Error("File must be a CSV.")
+    }
 
-            const file = inputFile.files[0]
-
-            if (!file.name.endsWith('.csv')) {
-                throw new Error("File must be a CSV.")
-            }
-            resolve(file)
-        })
-    })
+    await parseCSV(file).then((data: string[][]) => {
+        setupHeader(data)
+    });
 }
 
 function parseCSV(file: File): Promise<any[]> {
@@ -29,7 +26,7 @@ function parseCSV(file: File): Promise<any[]> {
             header: false,
             skipEmptyLines: true,
             complete: (results) => {
-                resolve(results.data); // The data is now ready!
+                resolve(results.data);
             },
             error: (error) => {
                 reject(error);
@@ -38,4 +35,4 @@ function parseCSV(file: File): Promise<any[]> {
     });
 }
 
-export { initFileInput, parseCSV }
+export { parseCSV }

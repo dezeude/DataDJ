@@ -16,6 +16,7 @@ camera.position.z = 2
 //position must be > 0 so points are visible in frustum (cube)
 const pointsGeometry = new THREE.BufferGeometry();
 export const pointsMaterial = new THREE.PointsMaterial({ size: 1, vertexColors: true, transparent: true });
+let pointsTransparency: number = 1; //between 0 and 1
 
 const decimalPlaces: number = 2;
 const cameraTopElement = document.getElementById('camera-top') as HTMLSpanElement;
@@ -399,6 +400,19 @@ function drawPoints() {
 export function changePointSize(size: number) {
     if (size <= 0) return;
     pointsMaterial.size = size;
+}
+
+export function changeTransparency(alpha: number) {
+    if (alpha < 0 || alpha > 1) return;
+    pointsTransparency = alpha;
+    for (let i = 0; i < pointColorsBuffer.length; i++) {
+        pointColorsBuffer[i * channelsPerColor + 3] = alpha; //opacity
+    }
+    pointsGeometry.getAttribute("color").needsUpdate = true;
+}
+
+export function getPointsAlpha() {
+    return pointsTransparency;
 }
 
 export function changeDimension(dim: string) {

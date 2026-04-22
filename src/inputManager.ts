@@ -1,4 +1,4 @@
-import { addMidiEventListener } from "./midi";
+import * as midi from "./midi";
 function arrEq<T>(a: ArrayLike<T> | null, b: ArrayLike<T> | null) {
     // Check for null or undefined values if not the same reference
     if (a == null || b == null) return false;
@@ -23,7 +23,7 @@ export type MidiCallback = (event: MIDIMessageEvent) => void;
 export class BindSelectController {
     private state: BindState = 'unbound';
     private boundData: Uint8Array | undefined = undefined;
-    private static waitingController: BindSelectController | null = null;
+    private static waitingController: BindSelectController | null = null; //move to module scope
     private button: HTMLButtonElement;
     private select: HTMLSelectElement;
 
@@ -43,7 +43,7 @@ export class BindSelectController {
         });
 
         // Global listeners for binding logic
-        addMidiEventListener((e) => this.handleMidiInput(e));
+        midi.addMidiEventListener((e) => this.handleMidiInput(e));
         window.addEventListener('click', () => this.cancelWaiting());
     }
 
@@ -70,11 +70,12 @@ export class BindSelectController {
 
         this.state = this.boundData ? 'bound' : 'unbound';
         BindSelectController.waitingController = null;
-        if (this.boundData) this.updateUI("Bounded")
-        else this.updateUI("Click to Bind");
+        if (this.boundData) this.updateUI("Bound")
+        else this.updateUI("Bind");
     }
 
     private handleMidiInput(event: MIDIMessageEvent) {
+        console.log('yolo')
         if (this.state === 'waiting') {
             event.preventDefault();
             this.bindKey(event.data!);
@@ -90,7 +91,7 @@ export class BindSelectController {
         this.boundData = data;
         this.state = 'bound';
         BindSelectController.waitingController = null;
-        this.updateUI("Bounded");
+        this.updateUI("Bound");
     }
 
     private rotateSelect(clockwise: boolean = false): void {
@@ -146,7 +147,7 @@ export class BindCallbackController implements IMidiBindController {
         });
 
         // Global listeners
-        addMidiEventListener((e) => this.handleMidiInput(e));
+        midi.addMidiEventListener((e) => this.handleMidiInput(e));
         window.addEventListener('click', () => this.cancelWaiting());
     }
 
@@ -176,7 +177,7 @@ export class BindCallbackController implements IMidiBindController {
         if (BindCallbackController.waitingController === this) {
             BindCallbackController.waitingController = null;
         }
-        this.updateUI(this.boundSignature ? "Bounded" : "Click to Bind");
+        this.updateUI(this.boundSignature ? "Bound" : "Bind");
     }
 
     private handleMidiInput(event: MIDIMessageEvent) {
@@ -199,7 +200,7 @@ export class BindCallbackController implements IMidiBindController {
 
         this.state = 'bound';
         BindCallbackController.waitingController = null;
-        this.updateUI("Bounded");
+        this.updateUI("Bound");
     }
 
     private isMatch(incomingData: Uint8Array): boolean {

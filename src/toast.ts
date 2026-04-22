@@ -18,7 +18,7 @@ function setText(text: string) {
     toastElement.textContent = text
 }
 
-function newMessage(msg: string, delay: number = defaultDelay) {
+export function newMessage(msg: string, delay: number = defaultDelay) {
     if (toastTimeout) { // toast timer has already finished
         clearTimeout(toastTimeout)
     }
@@ -31,4 +31,9 @@ function newMessage(msg: string, delay: number = defaultDelay) {
     }, delay)
 }
 
-export { newMessage }
+export function closeToast() {
+    if (toastTimeout) { // toast timer has already finished
+        clearTimeout(toastTimeout)
+    }
+    hideToast();
+}

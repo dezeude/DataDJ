@@ -69,17 +69,17 @@ function listInputsAndOutputs() {
     }
 }
 
-function startLoggingMIDIInput(callback: (event: MIDIMessageEvent) => void) {
-    let first = true;
-    // For some reason the device has 2 input port/channels.
-    // So, we'll only listen to one of them.
-    midiAccess.inputs.forEach((entry) => {
-        if (first)
-            console.log(entry)
-        entry.onmidimessage = callback;
-        first = false;
-    });
-}
+// function startLoggingMIDIInput(callback: (event: MIDIMessageEvent) => void) {
+//     let first = true;
+//     // For some reason the device has 2 input port/channels.
+//     // So, we'll only listen to one of them.
+//     midiAccess.inputs.forEach((entry) => {
+//         if (first)
+//             console.log(entry)
+//         entry.onmidimessage = callback;
+//         first = false;
+//     });
+// }
 
 export function addMidiEventListener(callback: (event: MIDIMessageEvent) => void) {
     let first = true;
