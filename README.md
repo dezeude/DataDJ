@@ -2,8 +2,6 @@
 
 A browser-based CSV scatter plot visualizer with live MIDI controller support. Load a CSV file, assign columns to axes, filter rows, and control the camera and display parameters in real time by turning knobs on a physical MIDI device.
 
-![2D/3D scatter plot with color mapping and MIDI bindings]()
-
 ---
 
 ## Features
@@ -33,14 +31,6 @@ npm run dev
 ```
 
 Then open the local URL printed by Vite (typically `http://localhost:5173`).
-
-### Build for production
-
-```bash
-npm run build
-npm run preview
-```
-
 ---
 
 ## Usage
