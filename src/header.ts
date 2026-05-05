@@ -7,68 +7,68 @@ import * as d3 from 'd3';
 
 const maxColorsOnScreen = 10;
 // "a human can typically distinguish between 6 to 10 distinct colors" -Internet/Gemini
-function createColorMap(data: Float32Array, selector: string): (v: number) => string {
-    const min = d3.min(data) ?? 0;
-    const max = d3.max(data) ?? 1;
+// function createColorMap(data: Float32Array, selector: string): (v: number) => string {
+//     const min = d3.min(data) ?? 0;
+//     const max = d3.max(data) ?? 1;
 
-    document.querySelector(selector)!.classList.remove('hidden')
+//     document.querySelector(selector)!.classList.remove('hidden')
 
-    // 1. Create the Sequential Scale
-    // Using interpolateTurbo to match the high-contrast rainbow in your image
-    const colorScale = d3.scaleSequential<string>()
-        .domain([min, max])
-        .interpolator(d3.interpolateTurbo)
-        .clamp(true);
+//     // 1. Create the Sequential Scale
+//     // Using interpolateTurbo to match the high-contrast rainbow in your image
+//     const colorScale = d3.scaleSequential<string>()
+//         .domain([min, max])
+//         .interpolator(d3.interpolateTurbo)
+//         .clamp(true);
 
-    // 2. Setup Dimensions for Legend
-    const width = 100;
-    const height = 300;
-    const margin = { top: 20, right: 50, bottom: 20, left: 10 };
+//     // 2. Setup Dimensions for Legend
+//     const width = 100;
+//     const height = 300;
+//     const margin = { top: 20, right: 50, bottom: 20, left: 10 };
 
-    const svg = d3.select(selector)
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+//     const svg = d3.select(selector)
+//         .append("svg")
+//         .attr("width", width + margin.left + margin.right)
+//         .attr("height", height + margin.top + margin.bottom)
+//         .append("g")
+//         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 3. Define the Gradient
-    const defs = svg.append("defs");
-    const linearGradient = defs.append("linearGradient")
-        .attr("id", "legend-gradient")
-        .attr("x1", "0%").attr("y1", "100%") // Bottom (min)
-        .attr("x2", "0%").attr("y2", "0%");   // Top (max)
+//     // 3. Define the Gradient
+//     const defs = svg.append("defs");
+//     const linearGradient = defs.append("linearGradient")
+//         .attr("id", "legend-gradient")
+//         .attr("x1", "0%").attr("y1", "100%") // Bottom (min)
+//         .attr("x2", "0%").attr("y2", "0%");   // Top (max)
 
-    // Add color stops (every 10% for a smooth transition)
-    const stops = 10;
-    d3.range(stops).forEach(i => {
-        const offset = i / (stops - 1);
-        linearGradient.append("stop")
-            .attr("offset", `${offset * 100}%`)
-            .attr("stop-color", colorScale(min + (max - min) * offset));
-    });
+//     // Add color stops (every 10% for a smooth transition)
+//     const stops = 10;
+//     d3.range(stops).forEach(i => {
+//         const offset = i / (stops - 1);
+//         linearGradient.append("stop")
+//             .attr("offset", `${offset * 100}%`)
+//             .attr("stop-color", colorScale(min + (max - min) * offset));
+//     });
 
-    // 4. Draw the Legend Rectangle
-    svg.append("rect")
-        .attr("width", 20)
-        .attr("height", height)
-        .style("fill", "url(#legend-gradient)");
+//     // 4. Draw the Legend Rectangle
+//     svg.append("rect")
+//         .attr("width", 20)
+//         .attr("height", height)
+//         .style("fill", "url(#legend-gradient)");
 
-    // 5. Add the Axis
-    const axisScale = d3.scaleLinear()
-        .domain([min, max])
-        .range([height, 0]);
+//     // 5. Add the Axis
+//     const axisScale = d3.scaleLinear()
+//         .domain([min, max])
+//         .range([height, 0]);
 
-    const axis = d3.axisRight(axisScale)
-        .ticks(5)
-        .tickFormat(d3.format(".2f"));
+//     const axis = d3.axisRight(axisScale)
+//         .ticks(5)
+//         .tickFormat(d3.format(".2f"));
 
-    svg.append("g")
-        .attr("transform", `translate(20, 0)`)
-        .call(axis);
+//     svg.append("g")
+//         .attr("transform", `translate(20, 0)`)
+//         .call(axis);
 
-    return colorScale;
-}
+//     return colorScale;
+// }
 
 function createSelOption(parent: HTMLSelectElement, colName: string) {
     const el = document.createElement("option") as HTMLOptionElement;
@@ -450,7 +450,7 @@ function setupHeader(data: string[][]) {
 
         for (let i = 0; i < numSteps; i++) {
             const alpha = i / (numSteps - 1);
-            const value = (min + alpha * (max - min)).toFixed(2);  // Map back to real value
+            // const value = (min + alpha * (max - min)).toFixed(2);  // Map back to real value
             const color = colorMap.getColor(alpha);
             const hex = `#${color.getHexString()}`;
 

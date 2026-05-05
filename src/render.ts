@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { newMessage } from './toast';
 import { Lut } from 'three/addons/math/Lut.js';
-import type { ThreeMFLoader } from 'three/examples/jsm/Addons.js';
 import * as d3 from 'd3';
 
 
@@ -38,9 +37,9 @@ const mouseRightElement = document.getElementById('mouse-right') as HTMLSpanElem
 let lastMouseDownX: number;
 let lastMouseDownY: number;
 
-function setBackgroundColor(color: THREE.Color) {
-    scene.background = color
-}
+// function setBackgroundColor(color: THREE.Color) {
+//     scene.background = color
+// }
 
 function floatEqual(x1: number, x2: number, epsilon: number = 0.000001): boolean {
     return Math.abs(x1 - x2) <= epsilon;
@@ -142,26 +141,26 @@ function round(num: number): string {
     return formatter.format(num)
 }
 
-function addRandomPoints(count: number) {
-    const posSize = 3;
-    const colorSize = 4;
-    const positions = new Float32Array(count * posSize); // x, y, z for each point
-    const colors = new Float32Array(count * colorSize); // x, y, z for each point
+// function addRandomPoints(count: number) {
+//     const posSize = 3;
+//     const colorSize = 4;
+//     const positions = new Float32Array(count * posSize); // x, y, z for each point
+//     const colors = new Float32Array(count * colorSize); // x, y, z for each point
 
-    for (let i = 0; i < count; i++) {
-        positions[i * posSize] = Math.random() * 10 - 5; // x
-        positions[i * posSize + 1] = Math.random() * 10 - 5; // y
-        positions[i * posSize + 2] = 0; // z (flat)
-        colors[i * colorSize + 0] = Math.random(); // R
-        colors[i * colorSize + 1] = Math.random(); // G
-        colors[i * colorSize + 2] = Math.random(); // B
-    }
+//     for (let i = 0; i < count; i++) {
+//         positions[i * posSize] = Math.random() * 10 - 5; // x
+//         positions[i * posSize + 1] = Math.random() * 10 - 5; // y
+//         positions[i * posSize + 2] = 0; // z (flat)
+//         colors[i * colorSize + 0] = Math.random(); // R
+//         colors[i * colorSize + 1] = Math.random(); // G
+//         colors[i * colorSize + 2] = Math.random(); // B
+//     }
 
-    pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, posSize));
-    pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, colorSize));
+//     pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, posSize));
+//     pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, colorSize));
 
-    drawPoints()
-}
+//     drawPoints()
+// }
 
 const coordsPerPoint = 3;
 const channelsPerColor = 4;
@@ -234,16 +233,16 @@ export function setZColumn(arr: ArrayLike<number>) {
     // }
 }
 
-function setColumns(x: ArrayLike<number>, y: ArrayLike<number>) {
-    if (x.length >= pointPositionsBuffer.length || y.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
-    if (x.length !== y.length) throw new Error("x and y columns are not the same length")
+// function setColumns(x: ArrayLike<number>, y: ArrayLike<number>) {
+//     if (x.length >= pointPositionsBuffer.length || y.length >= pointPositionsBuffer.length) throw new Error("Input array bigger than vertex buffer")
+//     if (x.length !== y.length) throw new Error("x and y columns are not the same length")
 
-    for (let i = 0; i < x.length; i++) {
-        pointPositionsBuffer[i * coordsPerPoint] = x[i];
-        pointPositionsBuffer[i * coordsPerPoint + 1] = y[i];
-    }
-    pointsGeometry.getAttribute("position").needsUpdate = true;
-}
+//     for (let i = 0; i < x.length; i++) {
+//         pointPositionsBuffer[i * coordsPerPoint] = x[i];
+//         pointPositionsBuffer[i * coordsPerPoint + 1] = y[i];
+//     }
+//     pointsGeometry.getAttribute("position").needsUpdate = true;
+// }
 /**
  * Renders only the rows that are included in the array parameters.
  * The points in the specified rows are rendered in the specified color,
@@ -295,23 +294,23 @@ export function showPoints(rowMask: ArrayLike<boolean | number>) {
  * @param selectedRows Array of row indices that should be colored according to @param selectedColor
  * @param selectedColor Color for selected points
  */
-function colorSelectedRows(selectedRows: ArrayLike<number>, selectedColor: THREE.Color, unselectedColor: THREE.Color = scene.background as THREE.Color) {
-    const totalPoints = pointColorsBuffer.length / channelsPerColor;
-    const selectedSet = new Set(Array.from(selectedRows));
+// function colorSelectedRows(selectedRows: ArrayLike<number>, selectedColor: THREE.Color, unselectedColor: THREE.Color = scene.background as THREE.Color) {
+//     const totalPoints = pointColorsBuffer.length / channelsPerColor;
+//     const selectedSet = new Set(Array.from(selectedRows));
 
-    for (let i = 0; i < totalPoints; i++) {
-        const color = selectedSet.has(i) ? selectedColor : unselectedColor;
+//     for (let i = 0; i < totalPoints; i++) {
+//         const color = selectedSet.has(i) ? selectedColor : unselectedColor;
 
-        // Calculate base index once per iteration
-        const baseIndex = i * channelsPerColor;
+//         // Calculate base index once per iteration
+//         const baseIndex = i * channelsPerColor;
 
-        pointColorsBuffer[baseIndex] = color.r;
-        pointColorsBuffer[baseIndex + 1] = color.g;
-        pointColorsBuffer[baseIndex + 2] = color.b;
-    }
+//         pointColorsBuffer[baseIndex] = color.r;
+//         pointColorsBuffer[baseIndex + 1] = color.g;
+//         pointColorsBuffer[baseIndex + 2] = color.b;
+//     }
 
-    pointsGeometry.getAttribute("color").needsUpdate = true;
-}
+//     pointsGeometry.getAttribute("color").needsUpdate = true;
+// }
 
 export function colorMapRowsDiscrete(colorValues: ArrayLike<number>, colorMap: Lut) {
     // if (colorValues.length * channelsPerColor !== pointColorsBuffer.length)
@@ -368,27 +367,27 @@ function clearPoints() {
  * @param y column to be rendered on the y-axis
 */
 
-function renderPoints(x: ArrayLike<number>, y: ArrayLike<number>) {
-    // TODO: Add number coloring functionality to this function?
-    if (x.length !== y.length) throw new Error("x and y columns are not the same length")
+// function renderPoints(x: ArrayLike<number>, y: ArrayLike<number>) {
+//     // TODO: Add number coloring functionality to this function?
+//     if (x.length !== y.length) throw new Error("x and y columns are not the same length")
 
-    for (let i = 0; i < x.length; i++) {
-        pointPositionsBuffer[i * coordsPerPoint] = x[i];
-        pointPositionsBuffer[i * coordsPerPoint + 1] = y[i];
-        // Would probably have to set the x and y before clicking a render button and rendering it.
+//     for (let i = 0; i < x.length; i++) {
+//         pointPositionsBuffer[i * coordsPerPoint] = x[i];
+//         pointPositionsBuffer[i * coordsPerPoint + 1] = y[i];
+//         // Would probably have to set the x and y before clicking a render button and rendering it.
 
 
-        // What happens if I don't set the values under here
-        pointPositionsBuffer[i * coordsPerPoint + 2] = 0;
-        // z value (all points should be on xy plane)
-        pointColorsBuffer[i * channelsPerColor] = 1; // R
-        pointColorsBuffer[i * channelsPerColor + 1] = 1; // G
-        pointColorsBuffer[i * channelsPerColor + 2] = 0; //B
-    }
-    pointsGeometry.setAttribute("position", new THREE.BufferAttribute(pointPositionsBuffer, coordsPerPoint))
-    pointsGeometry.setAttribute("color", new THREE.BufferAttribute(pointColorsBuffer, channelsPerColor))
-    drawPoints()
-}
+//         // What happens if I don't set the values under here
+//         pointPositionsBuffer[i * coordsPerPoint + 2] = 0;
+//         // z value (all points should be on xy plane)
+//         pointColorsBuffer[i * channelsPerColor] = 1; // R
+//         pointColorsBuffer[i * channelsPerColor + 1] = 1; // G
+//         pointColorsBuffer[i * channelsPerColor + 2] = 0; //B
+//     }
+//     pointsGeometry.setAttribute("position", new THREE.BufferAttribute(pointPositionsBuffer, coordsPerPoint))
+//     pointsGeometry.setAttribute("color", new THREE.BufferAttribute(pointColorsBuffer, channelsPerColor))
+//     drawPoints()
+// }
 
 function drawPoints() {
     const points = new THREE.Points(pointsGeometry, pointsMaterial)
