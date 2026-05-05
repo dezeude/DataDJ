@@ -1,6 +1,7 @@
 # Data DJ
 
 A browser-based CSV scatter plot visualizer with live MIDI controller support. Load a CSV file, assign columns to axes, filter rows, and control the camera and display parameters in real time by turning knobs on a physical MIDI device.
+Now deployed on [Github Pages](https://dezeude.github.io/DataDJ/)
 
 ---
 
@@ -30,7 +31,7 @@ npm install
 npm run dev
 ```
 
-Then open the local URL printed by Vite (typically `http://localhost:5173`).
+Then open the local URL printed by Vite (typically `http://localhost:8080`).
 ---
 
 ## Usage
@@ -78,6 +79,14 @@ Mouse coordinates are projected onto the XY plane and shown in the top-left over
 ## MIDI Control
 
 Data DJ's main differentiator is that almost every UI control can be bound to a physical MIDI input (knob, slider, button, or pad) for hands-free, real-time data exploration — hence the name.
+
+NOTE: In case MIDI inputs are not working on your browser when plugged in, enable/disable the midi flag on your browser. It should look like this for a Chrome-based browser:
+
+Chrome: **chrome://flags/#enable-web-midi**
+
+Edge: **edge://flags/#enable-web-midi**
+
+*Enter one of the links above ^^ in your browser URL bar, then toggle the flag, reload DataDJ page, and try again.*
 
 ### How Binding Works
 
